@@ -22,6 +22,217 @@
         // Temporary values
         this.temp = null;
 
+        this.setDefaults = function(o) {
+            $.extend(defaults, o);
+        }
+
+        this.formatDate = function (format, date, settings) {
+            if (!date) return null;
+            var s = $.extend({}, this.settings, settings);
+            // Check whether a format character is doubled
+            var look = function(m) {
+                var n = 0;
+                while (i + 1 < format.length && format.charAt(i + 1) == m) { n++; i++; };
+                return n;
+            };
+            // Format a number, with leading zero if necessary
+            var f1 = function(m, val, len) {
+                var n = '' + val;
+                if (look(m))
+                    while (n.length < len)
+                        n = '0' + n;
+                return n;
+            };
+            // Format a name, short or long as requested
+            var f2 = function(m, val, s, l) {
+                return (look(m) ? l[val] : s[val]);
+            };
+            var output = '';
+            var literal = false;
+            for (var i = 0; i < format.length; i++) {
+                if (literal)
+                    if (format.charAt(i) == "'" && !look("'"))
+                        literal = false;
+                    else
+                        output += format.charAt(i);
+                else
+                    switch (format.charAt(i)) {
+                        case 'd':
+                            output += f1('d', date.getDate(), 2);
+                            break;
+                        case 'D':
+                            output += f2('D', date.getDay(), s.dayNamesShort, s.dayNames);
+                            break;
+                        case 'o':
+                            output += f1('o', (date.getTime() - new Date(date.getFullYear(), 0, 0).getTime()) / 86400000, 3);
+                            break;
+                        case 'm':
+                            output += f1('m', date.getMonth() + 1, 2);
+                            break;
+                        case 'M':
+                            output += f2('M', date.getMonth(), s.monthNamesShort, s.monthNames);
+                            break;
+                        case 'y':
+                            output += (look('y') ? date.getFullYear() : (date.getYear() % 100 < 10 ? '0' : '') + date.getYear() % 100);
+                            break;
+                        case 'h':
+                            var h = date.getHours();
+                            output += f1('h', (h > 12 ? (h - 12) : (h == 0 ? 12 : h)), 2);
+                            break;
+                        case 'H':
+                            output += f1('H', date.getHours(), 2);
+                            break;
+                        case 'i':
+                            output += f1('i', date.getMinutes(), 2);
+                            break;
+                        case 's':
+                            output += f1('s', date.getSeconds(), 2);
+                            break;
+                        case 'a':
+                            output += date.getHours() > 11 ? 'pm' : 'am';
+                            break;
+                        case 'A':
+                            output += date.getHours() > 11 ? 'PM' : 'AM';
+                            break;
+                        case "'":
+                            if (look("'"))
+                                output += "'";
+                            else
+                                literal = true;
+                            break;
+                        default:
+                            output += format.charAt(i);
+                    }
+            }
+            return output;
+        }
+
+        this.parseDate = function (format, value, settings) {
+            var def = new Date();
+            if (!format || !value) return def;
+            value = (typeof value == 'object' ? value.toString() : value + '');
+            var s = $.extend({}, this.settings, settings);
+            var year = def.getFullYear();
+            var month = def.getMonth();
+            var day = def.getDate();
+            var doy = -1;
+            var hours = def.getHours();
+            var minutes = def.getMinutes();
+            var seconds = def.getSeconds();
+            var ampm = 0;
+            var literal = false;
+            // Check whether a format character is doubled
+            var lookAhead = function(match) {
+                var matches = (iFormat + 1 < format.length && format.charAt(iFormat + 1) == match);
+                if (matches)
+                    iFormat++;
+                return matches;
+            };
+            // Extract a number from the string value
+            var getNumber = function(match) {
+                lookAhead(match);
+                var size = (match == '@' ? 14 : (match == '!' ? 20 :
+                    (match == 'y' ? 4 : (match == 'o' ? 3 : 2))));
+                var digits = new RegExp('^\\d{1,' + size + '}');
+                var num = value.substring(iValue).match(digits);
+                if (!num)
+                    throw 'Missing number at position ' + iValue;
+                iValue += num[0].length;
+                return parseInt(num[0], 10);
+            };
+            // Extract a name from the string value and convert to an index
+            var getName = function(match, s, l) {
+                var names = (lookAhead(match) ? l : s);
+                for (var i = 0; i < names.length; i++) {
+                    if (value.substr(iValue, names[i].length).toLowerCase() == names[i].toLowerCase()) {
+                        iValue += names[i].length;
+                        return i + 1;
+                    }
+                }
+                throw 'Unknown name at position ' + iValue;
+            };
+            // Confirm that a literal character matches the string value
+            var checkLiteral = function() {
+                if (value.charAt(iValue) != format.charAt(iFormat))
+                    throw 'Unexpected literal at position ' + iValue;
+                iValue++;
+            };
+            var iValue = 0;
+            for (var iFormat = 0; iFormat < format.length; iFormat++) {
+                if (literal)
+                    if (format.charAt(iFormat) == "'" && !lookAhead("'"))
+                        literal = false;
+                    else
+                        checkLiteral();
+                else
+                    switch (format.charAt(iFormat)) {
+                        case 'd':
+                            day = getNumber('d');
+                            break;
+                        case 'D':
+                            getName('D', s.dayNamesShort, s.dayNames);
+                            break;
+                        case 'o':
+                            doy = getNumber('o');
+                            break;
+                        case 'm':
+                            month = getNumber('m');
+                            break;
+                        case 'M':
+                            month = getName('M', s.monthNamesShort, s.monthNames);
+                            break;
+                        case 'y':
+                            year = getNumber('y');
+                            break;
+                        case 'H':
+                            hours = getNumber('H');
+                            break;
+                        case 'h':
+                            hours = getNumber('h');
+                            break;
+                        case 'i':
+                            minutes = getNumber('i');
+                            break;
+                        case 's':
+                            seconds = getNumber('s');
+                            break;
+                        case 'a':
+                            ampm = getName('a', ['am', 'pm'], ['am', 'pm']) - 1;
+                            break;
+                        case 'A':
+                            ampm = getName('A', ['am', 'pm'], ['am', 'pm']) - 1;
+                            break;
+                        case "'":
+                            if (lookAhead("'"))
+                                checkLiteral();
+                            else
+                                literal = true;
+                            break;
+                        default:
+                            checkLiteral();
+                    }
+            }
+            if (year < 100)
+                year += new Date().getFullYear() - new Date().getFullYear() % 100 +
+                    (year <= s.shortYearCutoff ? 0 : -100);
+            if (doy > -1) {
+                month = 1;
+                day = doy;
+                do {
+                    var dim = 32 - new Date(year, month - 1, 32).getDate();
+                    if (day <= dim)
+                        break;
+                    month++;
+                    day -= dim;
+                } while (true);
+            }
+            if (ampm && hours < 12) hours += 12;
+            var date = new Date(year, month - 1, day, hours, minutes, seconds);
+            if (date.getFullYear() != year || date.getMonth() + 1 != month || date.getDate() != day)
+                throw 'Invalid date'; // E.g. 31/02/*
+            return date;
+        }
+
         this.setValue = function (input) {
             if (input == undefined) input = true;
             var v = this.formatResult();
@@ -74,13 +285,13 @@
             if (this.preset) {
                 var result = [];
                 if (s.preset == 'date') {
-                    try { var d = methods.parseDate(s.dateFormat, val, s); } catch (e) { var d = new Date(); };
+                    try { var d = this.parseDate(s.dateFormat, val, s); } catch (e) { var d = new Date(); };
                     result[yOrd] = d.getFullYear();
                     result[mOrd] = d.getMonth();
                     result[dOrd] = d.getDate();
                 }
                 else if (s.preset == 'time') {
-                    try { var d = methods.parseDate(s.timeFormat, val, s); } catch (e) { var d = new Date(); };
+                    try { var d = this.parseDate(s.timeFormat, val, s); } catch (e) { var d = new Date(); };
                     var hour = d.getHours();
                     result[0] = (s.ampm) ? (hour > 12 ? (hour - 12) : (hour == 0 ? 12 : hour)) : hour;
                     result[1] = d.getMinutes();
@@ -88,7 +299,7 @@
                     if (s.ampm) result[s.seconds ? 3 : 2] = hour > 11 ? 'PM' : 'AM';
                 }
                 else if (s.preset == 'datetime') {
-                    try { var d = methods.parseDate(s.dateFormat + ' ' + s.timeFormat, val, s); } catch (e) { var d = new Date(); };
+                    try { var d = this.parseDate(s.dateFormat + ' ' + s.timeFormat, val, s); } catch (e) { var d = new Date(); };
                     var hour = d.getHours();
                     result[yOrd] = d.getFullYear();
                     result[mOrd] = d.getMonth();
@@ -100,7 +311,7 @@
                 }
                 return result;
             }
-            return methods.parseValue(val);
+            return s.parseValue(val);
         }
 
         this.formatResult = function () {
@@ -108,18 +319,18 @@
             var d = this.temp;
             if (this.preset) {
                 if (s.preset == 'date') {
-                    return methods.formatDate(s.dateFormat, new Date(d[yOrd], d[mOrd], d[dOrd]), s);
+                    return this.formatDate(s.dateFormat, new Date(d[yOrd], d[mOrd], d[dOrd]), s);
                 }
                 else if (s.preset == 'datetime') {
                     var hour = (s.ampm && d[s.seconds ? 6 : 5] == 'PM' && (d[3] - 0) < 12) ? (d[3] - 0 + 12) : d[3];
-                    return methods.formatDate(s.dateFormat + ' ' + s.timeFormat, new Date(d[yOrd], d[mOrd], d[dOrd], hour, d[4], s.seconds ? d[5] : null), s);
+                    return this.formatDate(s.dateFormat + ' ' + s.timeFormat, new Date(d[yOrd], d[mOrd], d[dOrd], hour, d[4], s.seconds ? d[5] : null), s);
                 }
                 else if (s.preset == 'time') {
                     var hour = (s.ampm && d[s.seconds ? 3 : 2] == 'PM' && (d[0] - 0) < 12) ? (d[0] - 0 + 12) : d[0];
-                    return methods.formatDate(s.timeFormat, new Date(1970, 0, 1, hour, d[1], s.seconds ? d[2] : null), s);
+                    return this.formatDate(s.timeFormat, new Date(1970, 0, 1, hour, d[1], s.seconds ? d[2] : null), s);
                 }
             }
-            return methods.formatResult(d);
+            return s.formatResult(d);
         }
 
         this.validate = function(i) {
@@ -328,7 +539,6 @@
         width: 70,
         height: 40,
         rows: 3,
-        cols: 3,
         fx: false,
         disabled: false,
         showOnFocus: true,
@@ -359,7 +569,17 @@
         // Events
         beforeShow: function() {},
         onClose: function() {},
-        onSelect: function() {}
+        onSelect: function() {},
+        formatResult: function(d) {
+            var out = '';
+            for (var i = 0; i < d.length; i++) {
+                out += (i > 0 ? ' ' : '') + d[i];
+            }
+            return out;
+        },
+        parseValue: function(val) {
+            return val.split(' ');
+        }
     };
 
     var methods = {
@@ -421,9 +641,10 @@
                 $('.dwwc').live(START_EVENT, function (e) {
                     var x1 = touch ? e.originalEvent.changedTouches[0].pageX : e.pageX;
                     var x2 = $(this).offset().left;
-                    var width = $('.dww', this).outerWidth(true);/*inst.settings.width + 5;*/
+                    var width = $('.dww', this).outerWidth(true);
+                    var cols = $('.dww', this).length;
                     var i = 0;
-                    while (((x1 - x2) > ((i + 1) * width)) && (i < (inst.settings.cols - 1))) i++;
+                    while (((x1 - x2) > ((i + 1) * width)) && (i < (cols - 1))) i++;
                     move = true;
                     target = $('ul:visible:eq(' + i + ')', this);
                     pos = target.css('margin-top').replace(/px/i, '') - 0;
@@ -440,224 +661,6 @@
                 }
                 scrollers[this.id] = new Scroller(this, dw, settings);
             });
-        },
-        setDefaults: function(o) {
-            $.extend(defaults, options);
-        },
-        formatDate: function (format, date, settings) {
-            if (!date) return null;
-            var s = $.extend({}, defaults, settings);
-            // Check whether a format character is doubled
-            var look = function(m) {
-                var n = 0;
-                while (i + 1 < format.length && format.charAt(i + 1) == m) { n++; i++; };
-                return n;
-            };
-            // Format a number, with leading zero if necessary
-            var f1 = function(m, val, len) {
-                var n = '' + val;
-                if (look(m))
-                    while (n.length < len)
-                        n = '0' + n;
-                return n;
-            };
-            // Format a name, short or long as requested
-            var f2 = function(m, val, s, l) {
-                return (look(m) ? l[val] : s[val]);
-            };
-            var output = '';
-            var literal = false;
-            for (var i = 0; i < format.length; i++) {
-                if (literal)
-                    if (format.charAt(i) == "'" && !look("'"))
-                        literal = false;
-                    else
-                        output += format.charAt(i);
-                else
-                    switch (format.charAt(i)) {
-                        case 'd':
-                            output += f1('d', date.getDate(), 2);
-                            break;
-                        case 'D':
-                            output += f2('D', date.getDay(), s.dayNamesShort, s.dayNames);
-                            break;
-                        case 'o':
-                            output += f1('o', (date.getTime() - new Date(date.getFullYear(), 0, 0).getTime()) / 86400000, 3);
-                            break;
-                        case 'm':
-                            output += f1('m', date.getMonth() + 1, 2);
-                            break;
-                        case 'M':
-                            output += f2('M', date.getMonth(), s.monthNamesShort, s.monthNames);
-                            break;
-                        case 'y':
-                            output += (look('y') ? date.getFullYear() : (date.getYear() % 100 < 10 ? '0' : '') + date.getYear() % 100);
-                            break;
-                        case 'h':
-                            var h = date.getHours();
-                            output += f1('h', (h > 12 ? (h - 12) : (h == 0 ? 12 : h)), 2);
-                            break;
-                        case 'H':
-                            output += f1('H', date.getHours(), 2);
-                            break;
-                        case 'i':
-                            output += f1('i', date.getMinutes(), 2);
-                            break;
-                        case 's':
-                            output += f1('s', date.getSeconds(), 2);
-                            break;
-                        case 'a':
-                            output += date.getHours() > 11 ? 'pm' : 'am';
-                            break;
-                        case 'A':
-                            output += date.getHours() > 11 ? 'PM' : 'AM';
-                            break;
-                        case "'":
-                            if (look("'"))
-                                output += "'";
-                            else
-                                literal = true;
-                            break;
-                        default:
-                            output += format.charAt(i);
-                    }
-            }
-            return output;
-        },
-        parseDate: function (format, value, settings) {
-            var def = new Date();
-            if (!format || !value) return def;
-            value = (typeof value == 'object' ? value.toString() : value + '');
-            var s = $.extend({}, defaults, settings);
-            var year = def.getFullYear();
-            var month = def.getMonth();
-            var day = def.getDate();
-            var doy = -1;
-            var hours = def.getHours();
-            var minutes = def.getMinutes();
-            var seconds = def.getSeconds();
-            var ampm = 0;
-            var literal = false;
-            // Check whether a format character is doubled
-            var lookAhead = function(match) {
-                var matches = (iFormat + 1 < format.length && format.charAt(iFormat + 1) == match);
-                if (matches)
-                    iFormat++;
-                return matches;
-            };
-            // Extract a number from the string value
-            var getNumber = function(match) {
-                lookAhead(match);
-                var size = (match == '@' ? 14 : (match == '!' ? 20 :
-                    (match == 'y' ? 4 : (match == 'o' ? 3 : 2))));
-                var digits = new RegExp('^\\d{1,' + size + '}');
-                var num = value.substring(iValue).match(digits);
-                if (!num)
-                    throw 'Missing number at position ' + iValue;
-                iValue += num[0].length;
-                return parseInt(num[0], 10);
-            };
-            // Extract a name from the string value and convert to an index
-            var getName = function(match, s, l) {
-                var names = (lookAhead(match) ? l : s);
-                for (var i = 0; i < names.length; i++) {
-                    if (value.substr(iValue, names[i].length).toLowerCase() == names[i].toLowerCase()) {
-                        iValue += names[i].length;
-                        return i + 1;
-                    }
-                }
-                throw 'Unknown name at position ' + iValue;
-            };
-            // Confirm that a literal character matches the string value
-            var checkLiteral = function() {
-                if (value.charAt(iValue) != format.charAt(iFormat))
-                    throw 'Unexpected literal at position ' + iValue;
-                iValue++;
-            };
-            var iValue = 0;
-            for (var iFormat = 0; iFormat < format.length; iFormat++) {
-                if (literal)
-                    if (format.charAt(iFormat) == "'" && !lookAhead("'"))
-                        literal = false;
-                    else
-                        checkLiteral();
-                else
-                    switch (format.charAt(iFormat)) {
-                        case 'd':
-                            day = getNumber('d');
-                            break;
-                        case 'D':
-                            getName('D', s.dayNamesShort, s.dayNames);
-                            break;
-                        case 'o':
-                            doy = getNumber('o');
-                            break;
-                        case 'm':
-                            month = getNumber('m');
-                            break;
-                        case 'M':
-                            month = getName('M', s.monthNamesShort, s.monthNames);
-                            break;
-                        case 'y':
-                            year = getNumber('y');
-                            break;
-                        case 'H':
-                            hours = getNumber('H');
-                            break;
-                        case 'h':
-                            hours = getNumber('h');
-                            break;
-                        case 'i':
-                            minutes = getNumber('i');
-                            break;
-                        case 's':
-                            seconds = getNumber('s');
-                            break;
-                        case 'a':
-                            ampm = getName('a', ['am', 'pm'], ['am', 'pm']) - 1;
-                            break;
-                        case 'A':
-                            ampm = getName('A', ['am', 'pm'], ['am', 'pm']) - 1;
-                            break;
-                        case "'":
-                            if (lookAhead("'"))
-                                checkLiteral();
-                            else
-                                literal = true;
-                            break;
-                        default:
-                            checkLiteral();
-                    }
-            }
-            if (year < 100)
-                year += new Date().getFullYear() - new Date().getFullYear() % 100 +
-                    (year <= s.shortYearCutoff ? 0 : -100);
-            if (doy > -1) {
-                month = 1;
-                day = doy;
-                do {
-                    var dim = 32 - new Date(year, month - 1, 32).getDate();
-                    if (day <= dim)
-                        break;
-                    month++;
-                    day -= dim;
-                } while (true);
-            }
-            if (ampm && hours < 12) hours += 12;
-            var date = new Date(year, month - 1, day, hours, minutes, seconds);
-            if (date.getFullYear() != year || date.getMonth() + 1 != month || date.getDate() != day)
-                throw 'Invalid date'; // E.g. 31/02/*
-            return date;
-        },
-        formatResult: function(d) {
-            var out = '';
-            for (var i = 0; i < d.length; i++) {
-                out += (i > 0 ? ' ' : '') + d[i];
-            }
-            return out;
-        },
-        parseValue: function(val) {
-            return val.split(' ');
         },
         validate: function() { },
         enable: function() {
@@ -742,5 +745,7 @@
             $.error('Unknown method');
         }
     }
+
+    $.scroller = new Scroller(null, null, defaults);
 
 })(jQuery);

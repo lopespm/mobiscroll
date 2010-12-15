@@ -15,6 +15,7 @@
         var yOrd;
         var mOrd;
         var dOrd;
+        var show = false;
 
         this.settings = settings;
         this.values = null;
@@ -343,10 +344,10 @@
                 $('li:gt(' + days + ')', day).hide();
                 if (this.temp[dOrd] > days) {
                     if (s.fx) {
-                        day.animate({ 'margin-top': (h * (m - days - 1)) + 'px' }, 'fast');
+                        day.animate({ 'top': (h * (m - days - 1)) + 'px' }, 'fast');
                     }
                     else {
-                        day.css({ marginTop: (h * (m - days - 1)) });
+                        day.css({ top: (h * (m - days - 1)) });
                     }
                     this.temp[dOrd] = $('li:eq(' + days + ')', day).data('val');
                 }
@@ -360,7 +361,9 @@
             $(':input:not(.dwtd)').attr('disabled', '').removeClass('dwtd');
             dw.hide();
             dwo.hide();
+            show = false;
             if (this.preset) this.settings.wheels = null;
+            $(window).unbind('resize.dw');
         }
 
         this.show = function () {
@@ -422,13 +425,13 @@
             // Create wheels containers
             $('.dwc', dw).remove();
             for (var i = 0; i < s.wheels.length; i++) {
-                var dwc = $('<span class="dwc"><span class="dwlc"></span><span class="dwwc"><span class="dws"></span></span></span>').insertBefore($('.dwbc', dw));
+                var dwc = $('<div class="dwc"><div class="dwlc"><div class="clear" style="clear:both;"></div></div><div class="dwwc"><div class="clear" style="clear:both;"></div></div>').insertBefore($('.dwbc', dw));
                 // Create wheels
                 for (var label in s.wheels[i]) {
-                    var to1 = $('.dwwc .dws', dwc);
-                    var to2 = $('.dwlc', dwc);
-                    var w = $('<span class="dww"><ul></ul><span class="dwwo"></span></span>').insertBefore(to1);
-                    $('<span class="dwl">' + label + '</span>').appendTo(to2);
+                    var to1 = $('.dwwc .clear', dwc);
+                    var to2 = $('.dwlc .clear', dwc);
+                    var w = $('<div class="dwwl"><div class="dww"><ul></ul><div class="dwwo"></div></div><div class="dwwol"></div></div>').insertBefore(to1);
+                    $('<div class="dwl">' + label + '</div>').insertBefore(to2);
                     // Create wheel values
                     for (var j in s.wheels[i][label]) {
                         $('<li class="val_' + j + '">' + s.wheels[i][label][j] + '</li>').data('val', j).appendTo($('ul', w));
@@ -440,23 +443,10 @@
             $('.dww ul', dw).each(function(i) {
                 var x = $('li', this).index($('li.val_' + that.temp[i], this));
                 var val = h * (m - (x < 0 ? 0 : x) - 1);
-                $(this).css('margin-top', val);
+                $(this).css('top', val);
             });
             // Set value text
             $('.dwv', dw).html(this.formatResult());
-
-            // Set sizes
-            $('.dww, .dwl', dw).width(s.width);
-            $('.dww, .dwwc', dw).height(s.rows * h);
-            $('.dwbc a', dw).attr('class', s.btnClass);
-            $('.dww li', dw).css({
-                height: h,
-                lineHeight: h + 'px'
-            });
-            $('.dws', dw).css({
-                height: h,
-                marginTop: (m - 1) * h - 3
-            });
 
             // Init buttons
             $('#dw_set', dw).text(s.setText).unbind().click(function () {
@@ -478,7 +468,44 @@
             $(':input').attr('disabled', 'disabled');
             // Show
             dwo.show();
-            dw.show();
+            dw.attr('class', 'dw ' + s.theme).show();
+            show = true;
+            // Set sizes
+            $('.dww, .dwl', dw).width(s.width);
+            $('.dww', dw).height(s.rows * h);
+            $('.dwbc a', dw).attr('class', s.btnClass);
+            $('.dww li', dw).css({
+                height: h,
+                lineHeight: h + 'px'
+            });
+            $('.dwwc', dw).each(function() {
+                $(this).width($('.dwwl').outerWidth(true) * $('.dww', this).length);
+            });
+            $('.dwc', dw).each(function() {
+                $(this).width($('.dwwc').outerWidth(true));
+            });
+            // Set position
+            this.pos();
+            $(window).bind('resize.dw', function() { that.pos(); });
+        }
+
+        // Set position
+        this.pos = function() {
+            var totalw = 0;
+            var minw = 0;
+            var ww = $(window).width();
+            var w;
+            $('.dwc', dw).each(function() {
+                w = $(this).outerWidth(true);
+                totalw += w;
+                minw = ((w < minw) || (!minw)) ? w : minw;
+            });
+            w = totalw > ww ? minw : totalw;
+            dw.width(w);
+            w = dw.outerWidth();
+            dw.css({ left: (ww - w) / 2 });
+            dwo.height(0);
+            dwo.height($(document).height());
         }
 
         this.init = function() {
@@ -509,7 +536,7 @@
 
         // Init show datewheel
         $(elm).addClass('scroller').unbind('focus.dw').bind('focus.dw', function () {
-            if (!that.settings.disabled && that.settings.showOnFocus) {
+            if (!that.settings.disabled && that.settings.showOnFocus && !show) {
                 that.settings.beforeShow(elm, inst);
                 that.show();
             }
@@ -543,6 +570,7 @@
         disabled: false,
         showOnFocus: true,
         wheels: null,
+        theme: '',
         preset: 'date',
         dateFormat: 'mm/dd/yy',
         dateOrder: 'mdy',
@@ -606,31 +634,37 @@
                 $(document).bind(MOVE_EVENT, function (e) {
                     if (move) {
                         stop = touch ? e.originalEvent.changedTouches[0].pageY : e.pageY;
-                        target.css('margin-top', (pos + stop - start) + 'px');
+                        target.css('top', (pos + stop - start) + 'px');
                         e.preventDefault();
                         e.stopPropagation();
                         return false;
                     }
                 });
 
+                function calc(t, val) {
+                    val = val > ((m - 1) * h) ? ((m - 1) * h) : val;
+                    val = val < (m * h - $('li:visible', t).length * h) ? (m * h - $('li:visible', t).length * h) : val;
+                    if (inst.settings.fx) {
+                        t.stop(true, true).animate({ top: val + 'px' }, 'fast');
+                    }
+                    else {
+                        t.css('top', val);
+                    }
+                    var i = $('ul', dw).index(t);
+                    // Set selected scroller value
+                    inst.temp[i] = $('li:eq(' + (m - 1 - val / h) + ')', t).data('val');
+                    // Validate
+                    inst.validate(i);
+                    // Set value text
+                    $('.dwv', dw).html(inst.formatResult());
+                }
+
                 $(document).bind(END_EVENT, function (e) {
                     if (move) {
                         var val = Math.round((pos + stop - start) / h) * h;
                         val = val > ((m - 1) * h) ? ((m - 1) * h) : val;
                         val = val < (m * h - $('li:visible', target).length * h) ? (m * h - $('li:visible', target).length * h) : val;
-                        if (inst.settings.fx) {
-                            target.stop(true, true).animate({ 'margin-top': val + 'px' }, 'fast');
-                        }
-                        else {
-                            target.css({ marginTop: val });
-                        }
-                        var i = $('ul', dw).index(target);
-                        // Set selected scroller value
-                        inst.temp[i] = $('li:eq(' + (m - 1 - val / h) + ')', target).data('val');
-                        // Validate
-                        inst.validate(i);
-                        // Set value text
-                        $('.dwv', dw).html(inst.formatResult());
+                        calc(target, val);
                         move = false;
                         target = null;
                         e.preventDefault();
@@ -638,17 +672,24 @@
                     }
                 });
 
-                $('.dwwc').live(START_EVENT, function (e) {
+                $('.dwwl').live('DOMMouseScroll mousewheel', function (e) {
+                    var delta = 0;
+                    if (e.wheelDelta) delta = e.wheelDelta / 120;
+                    if (e.detail) delta = -e.detail / 3;
+                    var t = $('ul', this);
+                    var p = t.css('top').replace(/px/i, '') - 0;
+                    var val = Math.round((p + delta * h) / h) * h;
+                    calc(t, val);
+                });
+
+                $('.dwwl').live(START_EVENT, function (e) {
                     var x1 = touch ? e.originalEvent.changedTouches[0].pageX : e.pageX;
                     var x2 = $(this).offset().left;
-                    var width = $('.dww', this).outerWidth(true);
-                    var cols = $('.dww', this).length;
-                    var i = 0;
-                    while (((x1 - x2) > ((i + 1) * width)) && (i < (cols - 1))) i++;
                     move = true;
-                    target = $('ul:visible:eq(' + i + ')', this);
-                    pos = target.css('margin-top').replace(/px/i, '') - 0;
+                    target = $('ul', this);
+                    pos = target.css('top').replace(/px/i, '') - 0;
                     start = touch ? e.originalEvent.changedTouches[0].pageY : e.pageY;
+                    stop = start;
                     e.preventDefault();
                     e.stopPropagation();
                 });

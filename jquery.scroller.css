@@ -1,6 +1,5 @@
 /* Datewheel overlay */
 .dw {
-    width: auto;
     padding: 0 10px;
     position: absolute;
     top: 5%;
@@ -27,20 +26,18 @@
 .dwc {
     display: block;
     float: left;
-    margin:5px 2px;
-}
-/* Datewheel label container */
-.dwlc {
-    margin: 0 auto;
-    padding: 0 2px;
+    margin: 0 2px 5px 2px;
+    padding-top: 30px;
 }
 /* Datewheel label */
 .dwl {
-    float: left;
-    display: block;
-    padding: 5px 0;
-    margin: 0 4px;
+    margin: 0 2px;
     text-align: center;
+    line-height: 30px;
+    height: 30px;
+    white-space: nowrap;
+    position: relative;
+    top: -30px;
 }
 /* Datewheel value */
 .dwv {
@@ -50,8 +47,8 @@
 /* Datewheel wheel container */
 .dwwc {
     display: block;
-    margin: 0 auto;
-    padding: 4px 2px;
+    margin: 0;
+    padding: 0 2px;
     position: relative;
     -webkit-border-radius: 3px;
     -moz-border-radius: 3px;
@@ -60,7 +57,7 @@
 }
 /* Datewheel wheels */
 .dwwl {
-    margin: 0 2px;
+    margin: 4px 2px;
     float: left;
     display: block;
     position: relative;
@@ -69,9 +66,10 @@
     background: -moz-linear-gradient(center bottom,#000 0%,#333 35%, #888 50%,#333 65%,#000 100%);
 }
 .dww {
-    margin: 2px;
+    margin: 0 2px;
     overflow: hidden;
     position: relative;
+    top: -30px;
     color: #fff;
     background: #444;
     background: -webkit-gradient(linear,left bottom,left top,color-stop(0, #000),color-stop(0.45, #444),color-stop(0.55, #444),color-stop(1, #000));
@@ -83,15 +81,15 @@
     padding: 0;
     display: block;
     width: 100%;
-    position: absolute;
+    position: relative;
     z-index: 2;
-    top: 0;
-    left: 0;
+    /*top: 0;
+    left: 0;*/
 }
 .dww li {
     list-style: none;
     margin: 0;
-    padding: 0;
+    padding: 0 5px;
     display: block;
     text-align: center;
     line-height: 40px;
@@ -128,7 +126,7 @@
     height: 40px;
     line-height: 40px;
     padding: 0 15px;
-    margin: 0 2.5px;
+    margin: 0 2px 5px 2px;
     font-size: 14px;
     font-weight: bold;
     text-decoration: none;
@@ -144,7 +142,7 @@
 }
 /* Datewheel button container */
 .dwbc {
-    margin: 5px 0;
+    margin-top: 5px;
     text-align: center;
 }
 /* Color presets */

@@ -323,11 +323,11 @@
                     return this.formatDate(s.dateFormat, new Date(d[yOrd], d[mOrd], d[dOrd]), s);
                 }
                 else if (s.preset == 'datetime') {
-                    var hour = (s.ampm && d[s.seconds ? 6 : 5] == 'PM' && (d[3] - 0) < 12) ? (d[3] - 0 + 12) : d[3];
+                    var hour = (s.ampm) ? ((d[s.seconds ? 6 : 5] == 'PM' && (d[3] - 0) < 12) ? (d[3] - 0 + 12) : (d[s.seconds ? 6 : 5] == 'AM' && (d[3] == 12) ? 0 : d[3])) : d[3];
                     return this.formatDate(s.dateFormat + ' ' + s.timeFormat, new Date(d[yOrd], d[mOrd], d[dOrd], hour, d[4], s.seconds ? d[5] : null), s);
                 }
                 else if (s.preset == 'time') {
-                    var hour = (s.ampm && d[s.seconds ? 3 : 2] == 'PM' && (d[0] - 0) < 12) ? (d[0] - 0 + 12) : d[0];
+                    var hour = (s.ampm) ? ((d[s.seconds ? 3 : 2] == 'PM' && (d[0] - 0) < 12) ? (d[0] - 0 + 12) : (d[s.seconds ? 3 : 2] == 'AM' && (d[0] == 12) ? 0 : d[0])) : d[0];
                     return this.formatDate(s.timeFormat, new Date(1970, 0, 1, hour, d[1], s.seconds ? d[2] : null), s);
                 }
             }
@@ -425,13 +425,11 @@
             // Create wheels containers
             $('.dwc', dw).remove();
             for (var i = 0; i < s.wheels.length; i++) {
-                var dwc = $('<div class="dwc"><div class="dwlc"><div class="clear" style="clear:both;"></div></div><div class="dwwc"><div class="clear" style="clear:both;"></div></div>').insertBefore($('.dwbc', dw));
+                var dwc = $('<div class="dwc"><div class="dwwc"><div class="clear" style="clear:both;"></div></div>').insertBefore($('.dwbc', dw));
                 // Create wheels
                 for (var label in s.wheels[i]) {
                     var to1 = $('.dwwc .clear', dwc);
-                    var to2 = $('.dwlc .clear', dwc);
-                    var w = $('<div class="dwwl"><div class="dww"><ul></ul><div class="dwwo"></div></div><div class="dwwol"></div></div>').insertBefore(to1);
-                    $('<div class="dwl">' + label + '</div>').insertBefore(to2);
+                    var w = $('<div class="dwwl"><div class="dwl">' + label + '</div><div class="dww"><ul></ul><div class="dwwo"></div></div><div class="dwwol"></div></div>').insertBefore(to1);
                     // Create wheel values
                     for (var j in s.wheels[i][label]) {
                         $('<li class="val_' + j + '">' + s.wheels[i][label][j] + '</li>').data('val', j).appendTo($('ul', w));
@@ -471,18 +469,21 @@
             dw.attr('class', 'dw ' + s.theme).show();
             show = true;
             // Set sizes
-            $('.dww, .dwl', dw).width(s.width);
-            $('.dww', dw).height(s.rows * h);
+            //$('.dww, .dwl', dw).css('min-width', s.width);
+            $('.dww, .dwwl', dw).height(s.rows * h);
+            $('.dww', dw).each(function() { $(this).width($(this).parent().width() < s.width ? s.width : $(this).parent().width()); });
             $('.dwbc a', dw).attr('class', s.btnClass);
             $('.dww li', dw).css({
                 height: h,
                 lineHeight: h + 'px'
             });
             $('.dwwc', dw).each(function() {
-                $(this).width($('.dwwl').outerWidth(true) * $('.dww', this).length);
+                var w = 0;
+                $('.dwwl', this).each(function() { w += $(this).outerWidth(true); });
+                $(this).width(w);
             });
             $('.dwc', dw).each(function() {
-                $(this).width($('.dwwc').outerWidth(true));
+                $(this).width($('.dwwc', this).outerWidth(true));
             });
             // Set position
             this.pos();
@@ -498,7 +499,7 @@
             $('.dwc', dw).each(function() {
                 w = $(this).outerWidth(true);
                 totalw += w;
-                minw = ((w < minw) || (!minw)) ? w : minw;
+                minw = (w > minw) ? w : minw;
             });
             w = totalw > ww ? minw : totalw;
             dw.width(w);
@@ -563,7 +564,7 @@
 
     var defaults = {
         // Options
-        width: 70,
+        width: 60,
         height: 40,
         rows: 3,
         fx: false,
@@ -590,7 +591,7 @@
         hourText: 'Hours',
         minuteText: 'Minutes',
         secText: 'Seconds',
-        ampmText: '',
+        ampmText: '&nbsp;',
         setText: 'Set',
         cancelText: 'Cancel',
         btnClass: 'dwb',
@@ -621,9 +622,9 @@
             else {
                 // Create html
                 dwo = $('<div class="dwo"></div>').hide().appendTo('body');
-                dw = $('<div class="dw" style="text-align:center;">' +
+                dw = $('<div class="dw">' +
                     '<div class="dwv">&nbsp;</div>' +
-                    '<div class="dwbc">' +
+                    '<div class="dwbc" style="clear:both;">' +
                         '<a id="dw_set" href="#"></a>' +
                         '<a id="dw_cancel" href="#"></a>' +
                     '</div>' +
@@ -680,18 +681,22 @@
                     var p = t.css('top').replace(/px/i, '') - 0;
                     var val = Math.round((p + delta * h) / h) * h;
                     calc(t, val);
+                    e.preventDefault();
+                    e.stopPropagation();
                 });
 
                 $('.dwwl').live(START_EVENT, function (e) {
-                    var x1 = touch ? e.originalEvent.changedTouches[0].pageX : e.pageX;
-                    var x2 = $(this).offset().left;
-                    move = true;
-                    target = $('ul', this);
-                    pos = target.css('top').replace(/px/i, '') - 0;
-                    start = touch ? e.originalEvent.changedTouches[0].pageY : e.pageY;
-                    stop = start;
-                    e.preventDefault();
-                    e.stopPropagation();
+                    if (!move) {
+                        var x1 = touch ? e.originalEvent.changedTouches[0].pageX : e.pageX;
+                        var x2 = $(this).offset().left;
+                        move = true;
+                        target = $('ul', this);
+                        pos = target.css('top').replace(/px/i, '') - 0;
+                        start = touch ? e.originalEvent.changedTouches[0].pageY : e.pageY;
+                        stop = start;
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
                 });
             }
 

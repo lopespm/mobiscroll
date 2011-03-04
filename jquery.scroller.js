@@ -495,7 +495,10 @@
             var totalw = 0;
             var minw = 0;
             var ww = $(window).width();
+            var wh = $(window).height();
+            var st = $(window).scrollTop();
             var w;
+            var h;
             $('.dwc', dw).each(function() {
                 w = $(this).outerWidth(true);
                 totalw += w;
@@ -504,7 +507,8 @@
             w = totalw > ww ? minw : totalw;
             dw.width(w);
             w = dw.outerWidth();
-            dw.css({ left: (ww - w) / 2 });
+            h = dw.outerHeight();
+            dw.css({ left: (ww - w) / 2, top: st + (wh - h) / 2 });
             dwo.height(0);
             dwo.height($(document).height());
         }

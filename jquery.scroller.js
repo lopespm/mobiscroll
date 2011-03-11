@@ -358,6 +358,7 @@
         }
 
         this.hide = function () {
+            this.settings.onClose(this.val, this);
             $(':input:not(.dwtd)').attr('disabled', '').removeClass('dwtd');
             dw.hide();
             dwo.hide();
@@ -368,6 +369,7 @@
 
         this.show = function () {
             var s = this.settings;
+            s.beforeShow(elm, this);
             // Set global wheel element height
             h = s.height;
             m = Math.round(s.rows / 2);
@@ -450,13 +452,11 @@
             $('#dw_set', dw).text(s.setText).unbind().click(function () {
                 that.setValue();
                 s.onSelect(that.val, inst);
-                s.onClose(that.val, inst);
                 that.hide();
                 return false;
             });
 
             $('#dw_cancel', dw).text(s.cancelText).unbind().click(function () {
-                that.settings.onClose(that.val, inst);
                 that.hide();
                 return false;
             });
@@ -542,7 +542,6 @@
         // Init show datewheel
         $(elm).addClass('scroller').unbind('focus.dw').bind('focus.dw', function () {
             if (!that.settings.disabled && that.settings.showOnFocus && !show) {
-                that.settings.beforeShow(elm, inst);
                 that.show();
             }
         });

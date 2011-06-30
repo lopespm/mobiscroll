@@ -1,5 +1,5 @@
 ﻿/*!
- * jQuery MobiScroll v1.0beta
+ * jQuery MobiScroll v1.0
  * http://code.google.com/p/mobiscroll/
  *
  * Copyright 2010, Acid Media
@@ -359,7 +359,7 @@
 
         this.hide = function () {
             this.settings.onClose(this.val, this);
-            $(':input:not(.dwtd)').attr('disabled', '').removeClass('dwtd');
+            $(':input:not(.dwtd)').attr('disabled', false).removeClass('dwtd');
             dw.hide();
             dwo.hide();
             show = false;
@@ -403,16 +403,19 @@
                     s.wheels.push(w);
                 }
                 if (s.preset.match(/time/i)) {
+                    s.stepHour = (s.stepHour < 1) ? 1 : parseInt(s.stepHour);
+                    s.stepMinute = (s.stepMinute < 1) ? 1 : parseInt(s.stepMinute);
+                    s.stepSecond = (s.stepSecond < 1) ? 1 : parseInt(s.stepSecond);
                     var w = {};
                     w[s.hourText] = {};
-                    for (var i = 1; i < (s.ampm ? 13 : 24); i++)
+                    for (var i = 1; i < (s.ampm ? 13 : 24); i += s.stepHour)
                         w[s.hourText][i] = (i < 10) ? ('0' + i) : i;
                     w[s.minuteText] = {};
-                    for (var i = 0; i < 60; i++)
+                    for (var i = 0; i < 60; i += s.stepMinute)
                         w[s.minuteText][i] = (i < 10) ? ('0' + i) : i;
                     if (s.seconds) {
                         w[s.secText] = {};
-                        for (var i = 0; i < 60; i++)
+                        for (var i = 0; i < 60; i += s.stepSecond)
                             w[s.secText][i] = (i < 10) ? ('0' + i) : i;
                     }
                     if (s.ampm) {
@@ -442,6 +445,9 @@
             // Set scrollers to position
             $('.dww ul', dw).each(function(i) {
                 var x = $('li', this).index($('li.val_' + that.temp[i], this));
+                while ((x < 0) && (--that.temp[i] >= 0)) {
+                  x = $('li', this).index($('li.val_' + that.temp[i], this));
+                }
                 var val = h * (m - (x < 0 ? 0 : x) - 1);
                 $(this).css('top', val);
             });
@@ -463,7 +469,7 @@
 
             // Disable inputs to prevent bleed through (Android bug)
             $(':input:disabled').addClass('dwtd');
-            $(':input').attr('disabled', 'disabled');
+            $(':input').attr('disabled', true);
             // Show
             dwo.show();
             dw.attr('class', 'dw ' + s.theme).show();
@@ -537,7 +543,7 @@
         this.init();
 
         // Set element readonly, save original state
-        $(elm).is('input') ? $(elm).data('readonly', $(elm).attr('readonly')).attr('readonly', 'readonly') : false;
+        $(elm).is('input') ? $(elm).attr('readonly', 'readonly').data('readonly', $(elm).attr('readonly')) : false;
 
         // Init show datewheel
         $(elm).addClass('scroller').unbind('focus.dw').bind('focus.dw', function () {
@@ -598,6 +604,9 @@
         setText: 'Set',
         cancelText: 'Cancel',
         btnClass: 'dwb',
+        stepHour: 1,
+        stepMinute: 1,
+        stepSecond: 1,
         // Events
         beforeShow: function() {},
         onClose: function() {},

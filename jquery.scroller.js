@@ -1,5 +1,5 @@
 ﻿/*!
- * jQuery MobiScroll v1.0
+ * jQuery MobiScroll v1.0.1
  * http://code.google.com/p/mobiscroll/
  *
  * Copyright 2010, Acid Media
@@ -455,14 +455,14 @@
             $('.dwv', dw).html(this.formatResult());
 
             // Init buttons
-            $('#dw_set', dw).text(s.setText).unbind().click(function () {
+            $('#dw_set', dw).text(s.setText).unbind().bind('click vclick', function () {
                 that.setValue();
                 s.onSelect(that.val, inst);
                 that.hide();
                 return false;
             });
 
-            $('#dw_cancel', dw).text(s.cancelText).unbind().click(function () {
+            $('#dw_cancel', dw).text(s.cancelText).unbind().bind('click vclick', function () {
                 that.hide();
                 return false;
             });

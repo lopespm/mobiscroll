@@ -1,8 +1,8 @@
 ﻿/*!
- * jQuery MobiScroll v1.0.1
- * http://code.google.com/p/mobiscroll/
+ * jQuery MobiScroll v1.0.2
+ * http://mobiscroll.com
  *
- * Copyright 2010, Acid Media
+ * Copyright 2010-2011, Acid Media
  * Licensed under the MIT license.
  *
  */
@@ -135,7 +135,7 @@
                 var size = (match == '@' ? 14 : (match == '!' ? 20 :
                     (match == 'y' ? 4 : (match == 'o' ? 3 : 2))));
                 var digits = new RegExp('^\\d{1,' + size + '}');
-                var num = value.substring(iValue).match(digits);
+                var num = value.substr(iValue).match(digits);
                 if (!num)
                     throw 'Missing number at position ' + iValue;
                 iValue += num[0].length;
@@ -360,6 +360,7 @@
         this.hide = function () {
             this.settings.onClose(this.val, this);
             $(':input:not(.dwtd)').attr('disabled', false).removeClass('dwtd');
+            $(elm).blur();
             dw.hide();
             dwo.hide();
             show = false;
@@ -387,17 +388,20 @@
                         if (k == yOrd) {
                             w[s.yearText] = {};
                             for (var i = s.startYear; i <= s.endYear; i++)
-                                w[s.yearText][i] = i.toString().substr(2, 2);
+                                w[s.yearText][i] = s.dateOrder.search(/yy/i) < 0 ? i.toString().substr(2, 2) : i.toString();
                         }
                         else if (k == mOrd) {
                             w[s.monthText] = {};
                             for (var i = 0; i < 12; i++)
-                                w[s.monthText][i] = (i < 9) ? ('0' + (i + 1)) : (i + 1);
+                                w[s.monthText][i] =
+                                    (s.dateOrder.search(/MM/) < 0 ?
+                                    (s.dateOrder.search(/M/) < 0 ?
+                                    (s.dateOrder.search(/mm/) < 0 ? (i + 1) : (i < 9) ? ('0' + (i + 1)) : (i + 1)) : s.monthNamesShort[i]) : s.monthNames[i]);
                         }
                         else if (k == dOrd) {
                             w[s.dayText] = {};
                             for (var i = 1; i < 32; i++)
-                                w[s.dayText][i] = (i < 10) ? ('0' + i) : i;
+                                w[s.dayText][i] = s.dateOrder.search(/dd/i) < 0 ? i : (i < 10) ? ('0' + i) : i;
                         }
                     }
                     s.wheels.push(w);
@@ -408,7 +412,7 @@
                     s.stepSecond = (s.stepSecond < 1) ? 1 : parseInt(s.stepSecond);
                     var w = {};
                     w[s.hourText] = {};
-                    for (var i = 1; i < (s.ampm ? 13 : 24); i += s.stepHour)
+                    for (var i = 0; i < (s.ampm ? 13 : 24); i += s.stepHour)
                         w[s.hourText][i] = (i < 10) ? ('0' + i) : i;
                     w[s.minuteText] = {};
                     for (var i = 0; i < 60; i += s.stepMinute)
@@ -455,15 +459,25 @@
             $('.dwv', dw).html(this.formatResult());
 
             // Init buttons
-            $('#dw_set', dw).text(s.setText).unbind().bind('click vclick', function () {
+            $('#dw_set', dw).text(s.setText).unbind().bind('click tap', function (e) {
                 that.setValue();
                 s.onSelect(that.val, inst);
                 that.hide();
+                // -----------------------
+                // JQueryMobile Beta1 hack
+                preventFocus = true;
+                setTimeout(function() { preventFocus = false; }, 300);
+                // -----------------------
                 return false;
             });
 
-            $('#dw_cancel', dw).text(s.cancelText).unbind().bind('click vclick', function () {
+            $('#dw_cancel', dw).text(s.cancelText).unbind().bind('click tap', function (e) {
                 that.hide();
+                // -----------------------
+                // JQueryMobile Beta1 hack
+                preventFocus = true;
+                setTimeout(function() { preventFocus = false; }, 300);
+                // -----------------------
                 return false;
             });
 
@@ -546,10 +560,17 @@
         $(elm).is('input') ? $(elm).attr('readonly', 'readonly').data('readonly', $(elm).attr('readonly')) : false;
 
         // Init show datewheel
-        $(elm).addClass('scroller').unbind('focus.dw').bind('focus.dw', function () {
-            if (!that.settings.disabled && that.settings.showOnFocus && !show) {
-                that.show();
+        $(elm).addClass('scroller').unbind('focus.dw').bind('focus.dw', function (e) {
+            // -----------------------
+            // JQueryMobile Beta1 hack
+            if (preventFocus) {
+                $(elm).blur();
+                setTimeout(function() { $(elm).removeClass('ui-focus'); }, 50);
+                return false;
             }
+            // -----------------------
+            else if (!that.settings.disabled && that.settings.showOnFocus && !show)
+                that.show();
         });
     }
 
@@ -570,20 +591,25 @@
     var START_EVENT = touch ? 'touchstart' : 'mousedown';
     var MOVE_EVENT = touch ? 'touchmove' : 'mousemove';
     var END_EVENT = touch ? 'touchend' : 'mouseup';
+    // -----------------------
+    // JQueryMobile Beta1 hack
+    var preventFocus = false;
+    // -----------------------
 
     var defaults = {
         // Options
-        width: 60,
+        width: 80,
         height: 40,
         rows: 3,
         fx: false,
         disabled: false,
         showOnFocus: true,
+        showOnTap: true,
         wheels: null,
         theme: '',
         preset: 'date',
         dateFormat: 'mm/dd/yy',
-        dateOrder: 'mdy',
+        dateOrder: 'mmddy',
         ampm: true,
         seconds: false,
         timeFormat: 'hh:ii A',

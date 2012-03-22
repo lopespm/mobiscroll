@@ -745,7 +745,7 @@
             },
             parseValue: function(val, inst) {
                 var w = inst.settings.wheels,
-                    ret = val.split(' '),
+                    ret = val === '' ? [] : val.split(' '),
                     def = [],
                     total = 0;
                 for (var i = 0; i < w.length; i++) {

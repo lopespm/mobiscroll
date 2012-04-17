@@ -8,37 +8,78 @@
  */
 (function ($) {
 
-    function Scroller(elm, dw, settings) {
+    function Scroller(elm, settings) {
         var that = this,
             s = settings,
+            dw,
             yOrd,
             mOrd,
             dOrd,
             iv = {},
             tv = {},
+            e = elm,
+            elm = $(e),
+            input = elm.is('input'),
             visible = false;
 
-        this.settings = s;
-        this.values = null;
-        this.val = null;
+        that.settings = s;
+        that.values = null;
+        that.val = null;
         // Temporary values
-        this.temp = null;
+        that.temp = null;
+
+        // Private functions
+
+        function setGlobals(t) {
+            l = $('li:visible', t).length;
+            h = s.height;
+            m = Math.round(s.rows / 2);
+            inst = that;
+        }
+
+        function formatHeader() {
+            return s.headerText ? s.headerText.replace(/{value}/i, that.formatResult()) : '';
+        }
+
+        function plus(t) {
+            if (plustap) {
+                var p = t.data('pos'),
+                    val = p - 1;
+                val = val < (m - l) ? (m - 1) : val;
+                calc(t, val);
+            }
+            else {
+                clearInterval(plustap);
+            }
+        }
+
+        function minus(t) {
+            if (minustap) {
+                var p = t.data('pos'),
+                    val = p + 1;
+                val = val > (m - 1) ? (m - l) : val;
+                calc(t, val);
+            }
+            else {
+                clearInterval(minustap);
+            }
+        }
 
         /**
         * Set settings for all instances.
         * @param {Object} o - New default settings.
         */
-        this.setDefaults = function(o) {
+        that.setDefaults = function(o) {
             $.extend(defaults, o);
         }
 
         /**
         * Enables the scroller and the associated input.
         */
-        this.enable = function() {
+        that.enable = function() {
             s.disabled = false;
-            if ($(elm).is(':input'))
-                $(elm).prop('disabled', false);
+            if (input)
+                elm.prop('disabled', false);
         }
 
         /**
@@ -47,7 +88,8 @@
         * @param {Number} val - Value.
         * @param {Number} [time] - Duration of the animation, optional.
         */
-        this.scroll = function(t, val, time, orig, index) {
+        that.scroll = function(t, val, time, orig, index) {
+            var h = s.height;
             //t.data('pos', val)
             t.attr('style', (time ? (prefix + '-transition:all ' + time.toFixed(1) + 's ease-out;') : '') + (has3d ? (prefix + '-transform:translate3d(0,' + (val * h) + 'px,0);') : ('top:' + (val * h) + 'px;')));
 
@@ -81,10 +123,10 @@
         /**
         * Disables the scroller and the associated input.
         */
-        this.disable = function() {
+        that.disable = function() {
             s.disabled = true;
-            if ($(elm).is(':input'))
-                $(elm).prop('disabled', true);
+            if (input)
+                elm.prop('disabled', true);
         }
 
         /**
@@ -94,9 +136,9 @@
         * @param {Object} settings - Settings.
         * @return {String} - Returns the formatted date string.
         */
-        this.formatDate = function (format, date, settings) {
+        that.formatDate = function (format, date, settings) {
             if (!date) return null;
-            var s = $.extend({}, this.settings, settings),
+            var s = $.extend({}, that.settings, settings),
                 // Check whether a format character is doubled
                 look = function(m) {
                     var n = 0;
@@ -182,11 +224,11 @@
         * @param {Object} settings - Settings.
         * @return {Date} - Returns the extracted date.
         */
-        this.parseDate = function (format, value, settings) {
+        that.parseDate = function (format, value, settings) {
             var def = new Date();
             if (!format || !value) return def;
             value = (typeof value == 'object' ? value.toString() : value + '');
-            var s = $.extend({}, this.settings, settings),
+            var s = $.extend({}, that.settings, settings),
                 year = def.getFullYear(),
                 month = def.getMonth() + 1,
                 day = def.getDate(),
@@ -313,22 +355,22 @@
         /**
         * Gets the selected wheel values, formats it, and set the value of the scroller instance.
         * If input parameter is true, populates the associated input element.
-        * @param {Boolean} [input] - Also set the value of the associated input element. Default is true.
+        * @param {Boolean} [fill] - Also set the value of the associated input element. Default is true.
         */
-        this.setValue = function (input) {
-            if (input == undefined) input = true;
-            var v = this.formatResult();
-            this.val = v;
-            this.values = this.temp.slice(0);
-            if (input && $(elm).is(':input')) $(elm).val(v).change();
+        that.setValue = function (fill) {
+            if (fill == undefined) fill = true;
+            var v = that.formatResult();
+            that.val = v;
+            that.values = that.temp.slice(0);
+            if (fill && input) elm.val(v).change();
         }
 
         /**
         * Returns the currently selected date.
         * @return {Date}
         */
-        this.getDate = function () {
-            var d = this.values;
+        that.getDate = function () {
+            var d = that.values;
             if (s.preset == 'date')
                 return new Date(d[yOrd], d[mOrd], d[dOrd]);
             if (s.preset == 'time') {
@@ -346,27 +388,27 @@
         * @param {Date} d - Date to select.
         * @param {Boolean} [input] - Also set the value of the associated input element. Default is true.
         */
-        this.setDate = function (d, input) {
+        that.setDate = function (d, input) {
             if (s.preset.match(/date/i)) {
-                this.temp[yOrd] = d.getFullYear();
-                this.temp[mOrd] = d.getMonth();
-                this.temp[dOrd] = d.getDate();
+                that.temp[yOrd] = d.getFullYear();
+                that.temp[mOrd] = d.getMonth();
+                that.temp[dOrd] = d.getDate();
             }
             if (s.preset == 'time') {
                 var hour = d.getHours();
-                this.temp[0] = (s.ampm) ? (hour > 12 ? (hour - 12) : (hour == 0 ? 12 : hour)) : hour;
-                this.temp[1] = d.getMinutes();
-                if (s.seconds) this.temp[2] = d.getSeconds();
-                if (s.ampm) this.temp[s.seconds ? 3 : 2] = hour > 11 ? 'PM' : 'AM';
+                that.temp[0] = (s.ampm) ? (hour > 12 ? (hour - 12) : (hour == 0 ? 12 : hour)) : hour;
+                that.temp[1] = d.getMinutes();
+                if (s.seconds) that.temp[2] = d.getSeconds();
+                if (s.ampm) that.temp[s.seconds ? 3 : 2] = hour > 11 ? 'PM' : 'AM';
             }
             if (s.preset == 'datetime') {
                 var hour = d.getHours();
-                this.temp[3] = (s.ampm) ? (hour > 12 ? (hour - 12) : (hour == 0 ? 12 : hour)) : hour;
-                this.temp[4] = d.getMinutes();
-                if (s.seconds) this.temp[5] = d.getSeconds();
-                if (s.ampm) this.temp[s.seconds ? 6 : 5] = hour > 11 ? 'PM' : 'AM';
+                that.temp[3] = (s.ampm) ? (hour > 12 ? (hour - 12) : (hour == 0 ? 12 : hour)) : hour;
+                that.temp[4] = d.getMinutes();
+                if (s.seconds) that.temp[5] = d.getSeconds();
+                if (s.ampm) that.temp[s.seconds ? 6 : 5] = hour > 11 ? 'PM' : 'AM';
             }
-            this.setValue(input);
+            that.setValue(input);
         }
 
         /**
@@ -374,17 +416,17 @@
         * @param {String} val - String to parse.
         * @return {Array} Array with the selected wheel values.
         */
-        this.parseValue = function (val) {
-            if (this.preset) {
+        that.parseValue = function (val) {
+            if (that.preset) {
                 var result = [];
                 if (s.preset == 'date') {
-                    try { var d = this.parseDate(s.dateFormat, val, s); } catch (e) { var d = new Date(); };
+                    try { var d = that.parseDate(s.dateFormat, val, s); } catch (e) { var d = new Date(); };
                     result[yOrd] = d.getFullYear();
                     result[mOrd] = d.getMonth();
                     result[dOrd] = d.getDate();
                 }
                 else if (s.preset == 'time') {
-                    try { var d = this.parseDate(s.timeFormat, val, s); } catch (e) { var d = new Date(); };
+                    try { var d = that.parseDate(s.timeFormat, val, s); } catch (e) { var d = new Date(); };
                     var hour = d.getHours();
                     result[0] = (s.ampm) ? (hour > 12 ? (hour - 12) : (hour == 0 ? 12 : hour)) : hour;
                     result[1] = d.getMinutes();
@@ -392,7 +434,7 @@
                     if (s.ampm) result[s.seconds ? 3 : 2] = hour > 11 ? 'PM' : 'AM';
                 }
                 else if (s.preset == 'datetime') {
-                    try { var d = this.parseDate(s.dateFormat + ' ' + s.timeFormat, val, s); } catch (e) { var d = new Date(); };
+                    try { var d = that.parseDate(s.dateFormat + ' ' + s.timeFormat, val, s); } catch (e) { var d = new Date(); };
                     var hour = d.getHours();
                     result[yOrd] = d.getFullYear();
                     result[mOrd] = d.getMonth();
@@ -404,26 +446,26 @@
                 }
                 return result;
             }
-            return s.parseValue(val, this);
+            return s.parseValue(val, that);
         }
 
         /**
         * Formats the selected wheel values form the required format.
         * @return {String} Formatted string.
         */
-        this.formatResult = function () {
-            var d = this.temp;
-            if (this.preset) {
+        that.formatResult = function () {
+            var d = that.temp;
+            if (that.preset) {
                 if (s.preset == 'date') {
-                    return this.formatDate(s.dateFormat, new Date(d[yOrd], d[mOrd], d[dOrd]), s);
+                    return that.formatDate(s.dateFormat, new Date(d[yOrd], d[mOrd], d[dOrd]), s);
                 }
                 else if (s.preset == 'datetime') {
                     var hour = (s.ampm) ? ((d[s.seconds ? 6 : 5] == 'PM' && (d[3] - 0) < 12) ? (d[3] - 0 + 12) : (d[s.seconds ? 6 : 5] == 'AM' && (d[3] == 12) ? 0 : d[3])) : d[3];
-                    return this.formatDate(s.dateFormat + ' ' + s.timeFormat, new Date(d[yOrd], d[mOrd], d[dOrd], hour, d[4], s.seconds ? d[5] : null), s);
+                    return that.formatDate(s.dateFormat + ' ' + s.timeFormat, new Date(d[yOrd], d[mOrd], d[dOrd], hour, d[4], s.seconds ? d[5] : null), s);
                 }
                 else if (s.preset == 'time') {
                     var hour = (s.ampm) ? ((d[s.seconds ? 3 : 2] == 'PM' && (d[0] - 0) < 12) ? (d[0] - 0 + 12) : (d[s.seconds ? 3 : 2] == 'AM' && (d[0] == 12) ? 0 : d[0])) : d[0];
-                    return this.formatDate(s.timeFormat, new Date(1970, 0, 1, hour, d[1], s.seconds ? d[2] : null), s);
+                    return that.formatDate(s.timeFormat, new Date(1970, 0, 1, hour, d[1], s.seconds ? d[2] : null), s);
                 }
             }
             return s.formatResult(d);
@@ -434,16 +476,16 @@
         * In case of date presets it checks the number of days in a month.
         * @param {Integer} i - Currently changed wheel index, -1 if initial validation.
         */
-        this.validate = function(i) {
+        that.validate = function(i) {
             // If target is month, show/hide days
-            if (this.preset && s.preset.match(/date/i) && ((i == yOrd) || (i == mOrd) || (i == -1))) {
-                var days = 32 - new Date(this.temp[yOrd], this.temp[mOrd], 32).getDate() - 1;
+            if (that.preset && s.preset.match(/date/i) && ((i == yOrd) || (i == mOrd) || (i == -1))) {
+                var days = 32 - new Date(that.temp[yOrd], that.temp[mOrd], 32).getDate() - 1;
                 var day = $('ul:eq(' + dOrd + ')', dw);
                 $('li', day).show();
                 $('li:gt(' + days + ')', day).hide();
-                if (this.temp[dOrd] > days) {
-                    this.scroll(day, m - days - 1);
-                    this.temp[dOrd] = $('li:eq(' + days + ')', day).data('val');
+                if (that.temp[dOrd] > days) {
+                    that.scroll(day, m - days - 1);
+                    that.temp[dOrd] = $('li:eq(' + days + ')', day).data('val');
                 }
             }
             else {
@@ -451,21 +493,30 @@
             }
         }
 
+        that.change = function () {
+            var v = that.formatResult();
+            if (s.display == 'inline' && input)
+                elm.val(v);
+            else
+                $('.dwv', dw).html(formatHeader());
+            s.onChange.call(e, v, that);
+        }
+
         /**
         * Hides the scroller instance.
         */
-        this.hide = function () {
+        that.hide = function () {
             // If onClose handler returns false, prevent hide
-            if (s.onClose(this.val, this) === false) return false;
+            if (s.onClose.call(e, that.val, that) === false) return false;
             // Re-enable temporary disabled fields
             $('.dwtd').prop('disabled', false).removeClass('dwtd');
-            $(elm).blur();
+            elm.blur();
             // Hide wheels and overlay
-            dw.hide();
-            dwo.hide();
-            visible = false;
-            if (this.preset)
+            if (dw)
+                dw.remove();
+            if (that.preset)
                 s.wheels = null;
+            visible = false;
             // Stop positioning on window resize
             $(window).unbind('resize.dw');
         }
@@ -473,21 +524,20 @@
         /**
         * Shows the scroller instance.
         */
-        this.show = function () {
+        that.show = function () {
             if (s.disabled || visible) return false;
 
-            s.beforeShow(elm, this);
-            // Set global wheel element height
-            h = s.height;
-            m = Math.round(s.rows / 2);
+            s.beforeShow.call(e, e, that);
 
-            inst = this;
+            var hi = s.height,
+                thi = s.rows * hi,
+                mi = Math.round(s.rows / 2);
 
-            this.init();
+            that.init();
 
-            if (this.preset) {
+            if (that.preset) {
                 // Create preset wheels
-                s.wheels = new Array();
+                s.wheels = [];
                 if (s.preset.match(/date/i)) {
                     var w = {};
                     for (var k = 0; k < 3; k++) {
@@ -538,65 +588,42 @@
             }
 
             // Create wheels containers
-            $('.dwc', dw).remove();
+            var html = s.display == 'inline' ? '<div><div class="dw dwi ' + s.theme + '">' : '<div><div class="dwo"></div><div class="dw ' + s.theme + '">' + (s.headerText ? '<div class="dwv">' + formatHeader() + '</div>' : '');
             for (var i = 0; i < s.wheels.length; i++) {
-                var dwc = $('<div class="dwc' + (s.mode != 'scroller' ? ' dwpm' : '') + (s.showLabel ? '' : ' dwhl') + '"><div class="dwwc dwrc"><div class="clear" style="clear:both;"></div></div>').insertBefore($('.dwbc', dw));
+                html += '<div class="dwc' + (s.mode != 'scroller' ? ' dwpm' : '') + (s.showLabel ? '' : ' dwhl') + '"><div class="dwwc dwrc">';
                 // Create wheels
                 for (var label in s.wheels[i]) {
-                    var to1 = $('.dwwc .clear', dwc);
-                    var w = $('<div class="dwwl dwrc">' + (s.mode != 'scroller' ? '<div class="dwwb dwwbp"><span>+</span></div><div class="dwwb dwwbm"><span>&ndash;</span></div>' : '') + '<div class="dwl">' + label + '</div><div class="dww dwrc"><ul></ul><div class="dwwo"></div></div><div class="dwwol"></div></div>').insertBefore(to1);
+                    html += '<div class="dwwl dwrc" style="height:' + thi + 'px;">' + (s.mode != 'scroller' ? '<div class="dwwb dwwbp" style="height:' + hi + 'px;line-height:' + hi + 'px;"><span>+</span></div><div class="dwwb dwwbm" style="height:' + hi + 'px;line-height:' + hi + 'px;"><span>&ndash;</span></div>' : '') + '<div class="dwl">' + label + '</div><div class="dww dwrc" style="height:' + thi + 'px;"><ul>';
                     // Create wheel values
                     for (var j in s.wheels[i][label]) {
-                        $('<li class="val_' + j + '">' + s.wheels[i][label][j] + '</li>').data('val', j).appendTo($('ul', w));
+                        html += '<li data-val="' + j + '" style="line-height:' + hi + 'px;">' + s.wheels[i][label][j] + '</li>';
                     }
+                    html += '</ul><div class="dwwo"></div></div><div class="dwwol"></div></div>';
                 }
+                html += '<div class="dwcc"></div></div></div>';
             }
+            html += (s.display != 'inline' ? '<div class="dwbc"><span class="dwbw dwb-s"><a href="#" class="dwb"></a></span><span class="dwbw dwb-c"><a href="#" class="dwb"></a></span></div>' : '<div class="dwcc"></div>') + '</div></div>';
+
+            dw = $(html);
 
             // Set scrollers to position
             $('.dww ul', dw).each(function(i) {
-                var x = $('li', this).index($('li.val_' + that.temp[i], this));
+                var x = $('li', this).index($('li[data-val="' + that.temp[i] + '"]', this));
                 while ((x < 0) && (--that.temp[i] >= 0)) {
-                  x = $('li', this).index($('li.val_' + that.temp[i], this));
+                    x = $('li', this).index($('li[data-val="' + that.temp[i] + '"]', this));
                 }
-                that.scroll($(this), m - (x < 0 ? 0 : x) - 1);
+                that.scroll($(this), mi - (x < 0 ? 0 : x) - 1);
             });
-            // Set value text
-            if (s.showValue)
-                $('.dwv', dw).html(this.formatResult()).show();
-            else
-                $('.dwv', dw).hide();
+
             // Initial validate
             that.validate(-1);
 
-            // Init buttons
-            $('#dw_set', dw).text(s.setText).unbind().bind('click', function (e) {
-                that.setValue();
-                s.onSelect(that.val, inst);
-                that.hide();
-                return false;
-            });
-
-            $('#dw_cancel', dw).text(s.cancelText).unbind().bind('click', function (e) {
-                s.onCancel(that.val, inst);
-                that.hide();
-                return false;
-            });
-
-            // Disable inputs to prevent bleed through (Android bug)
-            $(':input:not(:disabled)').addClass('dwtd');
-            $(':input').prop('disabled', true);
             // Show
-            dwo.show();
-            dw.attr('class', 'dw ' + s.theme).show();
+            s.display != 'inline' ? dw.appendTo('body') : input ? dw.insertAfter(elm) : elm.html(dw);
             visible = true;
+
             // Set sizes
-            $('.dww, .dwwl', dw).height(s.rows * h);
             $('.dww', dw).each(function() { $(this).width($(this).parent().width() < s.width ? s.width : $(this).parent().width()); });
-            $('.dwbc a', dw).attr('class', s.btnClass);
-            $('.dww li, .dwwb', dw).css({
-                height: h,
-                lineHeight: h + 'px'
-            });
             $('.dwwc', dw).each(function() {
                 var w = 0;
                 $('.dwwl', this).each(function() { w += $(this).outerWidth(true); });
@@ -605,20 +632,90 @@
             $('.dwc', dw).each(function() {
                 $(this).width($('.dwwc', this).outerWidth(true));
             });
-            // Set position
-            this.pos();
-            $(window).bind('resize.dw', function() { that.pos(); });
+
+            if (s.display != 'inline') {
+                // Init buttons
+                $('.dwb-s a', dw).text(s.setText).bind('click', function (e) {
+                    that.setValue();
+                    s.onSelect.call(e, that.val, that);
+                    that.hide();
+                    return false;
+                });
+
+                $('.dwb-c a', dw).text(s.cancelText).bind('click', function (e) {
+                    s.onCancel.call(e, that.val, that);
+                    that.hide();
+                    return false;
+                });
+
+                // Disable inputs to prevent bleed through (Android bug)
+                $(':input:not(:disabled)').addClass('dwtd');
+                $(':input').prop('disabled', true);
+
+                // Set position
+                that.pos();
+                $(window).bind('resize.dw', function() { that.pos(); });
+            }
+
+            // Events
+            dw.delegate('.dwwl', 'DOMMouseScroll mousewheel', function (e) {
+                e.preventDefault();
+                e = e.originalEvent;
+                var delta = e.wheelDelta ? (e.wheelDelta / 120) : (e.detail ? (-e.detail / 3) : 0),
+                    t = $('ul', this),
+                    p = t.data('pos'),
+                    val = Math.round(p + delta);
+                setGlobals(t);
+                calc(t, val);
+            }).delegate('.dwb, .dwwb', START_EVENT, function (e) {
+                // Active button
+                $(this).addClass('dwb-a');
+            }).delegate('.dwwbp', START_EVENT, function (e) {
+                // + Button
+                e.preventDefault();
+                e.stopPropagation();
+                var t = $(this).closest('.dwwl').find('ul');
+                setGlobals(t);
+                clearInterval(plustap);
+                plustap = setInterval(function() { plus(t); }, s.delay);
+                plus(t);
+            }).delegate('.dwwbm', START_EVENT, function (e) {
+                // - Button
+                e.preventDefault();
+                e.stopPropagation();
+                var t = $(this).closest('.dwwl').find('ul');
+                setGlobals(t);
+                clearInterval(minustap);
+                minustap = setInterval(function() { minus(t); }, s.delay);
+                minus(t);
+            }).delegate('.dwwl', START_EVENT, function (e) {
+                // Scroll start
+                if (!move && that.settings.mode != 'clickpick') {
+                    e.preventDefault();
+                    move = true;
+                    target = $('ul', this).addClass('dwa');
+                    $('.dwwb', this).fadeOut('fast');
+                    pos = target.data('pos');
+                    setGlobals(target);
+                    start = getY(e);
+                    startTime = new Date();
+                    stop = start;
+                    that.scroll(target, pos);
+                }
+            });
         }
 
         /**
         * Positions the scroller instance to the center of the viewport.
         */
-        this.pos = function() {
+        that.pos = function() {
             var totalw = 0,
                 minw = 0,
                 ww = $(window).width(),
                 wh = $(window).height(),
                 st = $(window).scrollTop(),
+                o = $('.dwo', dw),
+                d = $('.dw', dw),
                 w,
                 h;
             $('.dwc', dw).each(function() {
@@ -627,18 +724,17 @@
                 minw = (w > minw) ? w : minw;
             });
             w = totalw > ww ? minw : totalw;
-            dw.width(w);
-            w = dw.outerWidth();
-            h = dw.outerHeight();
-            dw.css({ left: (ww - w) / 2, top: st + (wh - h) / 2 });
-            dwo.height(0);
-            dwo.height($(document).height());
+            d.width(w);
+            w = d.outerWidth();
+            h = d.outerHeight();
+            d.css({ left: (ww - w) / 2, top: st + (wh - h) / 2 });
+            o.height(0).height($(document).height());
         }
 
         /**
         * Scroller initialization.
         */
-        this.init = function() {
+        that.init = function() {
             // Set year-month-day order
             var ty = s.dateOrder.search(/y/i),
                 tm = s.dateOrder.search(/m/i),
@@ -646,22 +742,27 @@
             yOrd = ty < tm ? (ty < td ? 0 : 1) : (ty < td ? 1 : 2);
             mOrd = tm < ty ? (tm < td ? 0 : 1) : (tm < td ? 1 : 2);
             dOrd = td < ty ? (td < tm ? 0 : 1) : (td < tm ? 1 : 2);
-            this.preset = (s.wheels === null);
-            this.temp = (($(elm).is('input') && this.val !== null && this.val != $(elm).val()) || this.values === null) ? this.parseValue($(elm).val() ? $(elm).val() : '') : this.values.slice(0);
-            this.setValue(false);
+            that.preset = (s.wheels === null);
+            that.temp = ((input && that.val !== null && that.val != elm.val()) || that.values === null) ? that.parseValue(elm.val() ? elm.val() : '') : that.values.slice(0);
+            that.setValue(false);
         }
 
-        this.init();
+        that.init();
 
-        // Set element readonly, save original state
-        if ($(elm).is(':input') && s.showOnFocus)
-            $(elm).data('dwro', $(elm).prop('readonly')).prop('readonly', true);
+        if (s.display == 'inline') {
+            that.show();
+        }
+        else {
+            // Set element readonly, save original state
+            if (input && s.showOnFocus)
+                elm.data('dwro', elm.prop('readonly')).prop('readonly', true);
 
-        // Init show datewheel
-        $(elm).addClass('scroller').unbind('focus.dw').bind('focus.dw', function (e) {
-            if (s.showOnFocus)
-                that.show();
-        });
+            // Init show datewheel
+            elm.addClass('scroller').unbind('focus.dw').bind('focus.dw', function (e) {
+                if (s.showOnFocus)
+                    that.show();
+            });
+        }
     }
 
     function testProps(props) {
@@ -682,8 +783,27 @@
         return '';
     }
 
-    var dw,
-        dwo,
+    function getY(e) {
+        return touch ? e.originalEvent.changedTouches[0].pageY : e.pageY;
+    }
+
+    function calc(t, val, anim, orig) {
+        var dw = t.closest('.dw'),
+            i = $('ul', dw).index(t);
+        val = val > (m - 1) ? (m - 1) : val;
+        val = val < (m - l) ? (m - l) : val;
+        // Call scroll with animation (calc animation time)
+        inst.scroll(t, val, anim ? (val == orig ? 0.1 : Math.abs((val - orig) * 0.1)) : 0, orig, i);
+        // Set selected scroller value
+        inst.temp[i] = $('li:eq(' + (m - 1 - val) + ')', t).data('val');
+        // Validate
+        inst.validate(i);
+        // Set value text
+        inst.change();
+    }
+
+    var plustap = false,
+        minustap = false,
         h,
         m,
         l,
@@ -710,12 +830,15 @@
             width: 80,
             height: 40,
             rows: 3,
+            delay: 300,
             disabled: false,
             showOnFocus: true,
-            showValue: true,
+            //showValue: true,
             showLabel: true,
             wheels: null,
             theme: '',
+            headerText: '{value}',
+            display: 'modal',
             mode: 'scroller',
             preset: 'date',
             dateFormat: 'mm/dd/yy',
@@ -739,7 +862,7 @@
             ampmText: '&nbsp;',
             setText: 'Set',
             cancelText: 'Cancel',
-            btnClass: 'dwb',
+            //btnClass: 'dwb',
             stepHour: 1,
             stepMinute: 1,
             stepSecond: 1,
@@ -748,6 +871,7 @@
             onClose: function() {},
             onSelect: function() {},
             onCancel: function() {},
+            onChange: function() {},
             formatResult: function(d) {
                 var out = '';
                 for (var i = 0; i < d.length; i++) {
@@ -813,183 +937,12 @@
                     defs.rows = 3;
                 }
 
-                var settings = $.extend({}, defaults, defs, options),
-                    plustap = false,
-                    minustap = false;
-
-                if ($('.dw').length) {
-                    dwo = $('.dwo');
-                    dw = $('.dw');
-                }
-                else {
-                    // Create html
-                    dwo = $('<div class="dwo"></div>').hide().appendTo('body');
-                    dw = $('<div class="dw">' +
-                        '<div class="dwv">&nbsp;</div>' +
-                        '<div class="dwbc" style="clear:both;">' +
-                            '<span class="dwbw dwb-s"><a id="dw_set" href="#"></a></span>' +
-                            '<span class="dwbw dwb-c"><a id="dw_cancel" href="#"></a></span>' +
-                        '</div>' +
-                    '</div>');
-
-                    dw.hide().appendTo('body');
-
-                    function getY(e) {
-                        return touch ? e.originalEvent.changedTouches[0].pageY : e.pageY;
-                    }
-
-                    function calc(t, val, anim, orig) {
-                        var i = $('ul', dw).index(t);
-                        val = val > (m - 1) ? (m - 1) : val;
-                        val = val < (m - l) ? (m - l) : val;
-                        // Call scroll with animation (calc animation time)
-                        inst.scroll(t, val, anim ? (val == orig ? 0.1 : Math.abs((val - orig) * 0.1)) : 0, orig, i);
-                        // Set selected scroller value
-                        inst.temp[i] = $('li:eq(' + (m - 1 - val) + ')', t).data('val');
-                        // Validate
-                        inst.validate(i);
-                        // Set value text
-                        $('.dwv', dw).html(inst.formatResult());
-                    }
-
-                    function plus(t) {
-                        if (plustap) {
-                            var p = t.data('pos'),
-                                val = p - 1;
-                            val = val < (m - l) ? (m - 1) : val;
-                            calc(t, val);
-                        }
-                        else {
-                            clearInterval(plustap);
-                        }
-                    }
-
-                    function minus(t) {
-                        if (minustap) {
-                            var p = t.data('pos'),
-                                val = p + 1;
-                            val = val > (m - 1) ? (m - l) : val;
-                            calc(t, val);
-                        }
-                        else {
-                            clearInterval(minustap);
-                        }
-                    }
-
-                    $(document).bind(MOVE_EVENT, function (e) {
-                        if (move) {
-                            e.preventDefault();
-                            stop = getY(e);
-
-                            // Circular wheels
-                            /*var diff = Math.round((stop - start) / h);
-                            if (diff > 0) {
-                                start += h;
-                                $('li:last', target).prependTo(target);
-                            }
-                            else if (diff < 0) {
-                                start -= h;
-                                $('li:first', target).appendTo(target);
-                            }*/
-                            var val = pos + (stop - start) / h;
-                            val = val > (m - 1 + 1) ? (m - 1 + 1) : val;
-                            val = val < (m - l - 1) ? (m - l - 1) : val;
-                            inst.scroll(target, val);
-                        }
-                    });
-
-                    $(document).bind(END_EVENT, function (e) {
-                        if (move) {
-                            e.preventDefault();
-                            target.removeClass('dwa');
-                            var time = new Date() - startTime,
-                                val = pos + (stop - start) / h;
-                            val = val > (m - 1 + 1) ? (m - 1 + 1) : val;
-                            val = val < (m - l - 1) ? (m - l - 1) : val;
-
-                            if (time < 300) {
-                                var speed = (stop - start) / time;
-                                var dist = (speed * speed) / (2 * 0.0006);
-                                if (stop - start < 0) dist = -dist;
-                            }
-                            else {
-                                var dist = stop - start;
-                            }
-                            //var dist = stop - start;
-                            calc(target, Math.round(pos + dist / h), true, Math.round(val));
-                            move = false;
-                            target = null;
-                        }
-                        clearInterval(plustap);
-                        clearInterval(minustap);
-                        plustap = false;
-                        minustap = false;
-                        $('.dwb-a').removeClass('dwb-a');
-                    });
-
-                    dw.delegate('.dwwl', 'DOMMouseScroll mousewheel', function (e) {
-                        e.preventDefault();
-                        e = e.originalEvent;
-                        var delta = e.wheelDelta ? (e.wheelDelta / 120) : (e.detail ? (-e.detail / 3) : 0),
-                            t = $('ul', this),
-                            p = t.data('pos'),
-                            val = Math.round(p + delta);
-                        l = $('li:visible', t).length;
-
-                        // Circular wheels
-                        /*if (p > val) {
-                            val += 40;
-                            $('li:first', t).appendTo(t);
-                        }
-                        else if (p < val) {
-                            val -= 40;
-                            $('li:last', t).prependTo(t);
-                        }*/
-                        calc(t, val);
-                    }).delegate('.dwb, .dwwb', START_EVENT, function (e) {
-                        // Active button
-                        $(this).addClass('dwb-a');
-                    }).delegate('.dwwbp', START_EVENT, function (e) {
-                        // + Button
-                        e.preventDefault();
-                        e.stopPropagation();
-                        var t = $(this).closest('.dwwl').find('ul');
-                        l = $('li:visible', t).length;
-                        clearInterval(plustap);
-                        plustap = setInterval(function() { plus(t); }, 300);
-                        plus(t);
-                    }).delegate('.dwwbm', START_EVENT, function (e) {
-                        // - Button
-                        e.preventDefault();
-                        e.stopPropagation();
-                        var t = $(this).closest('.dwwl').find('ul');
-                        l = $('li:visible', t).length;
-                        clearInterval(minustap);
-                        minustap = setInterval(function() { minus(t); }, 300);
-                        minus(t);
-                    }).delegate('.dwwl', START_EVENT, function (e) {
-                        // Scroll start
-                        if (!move && inst.settings.mode != 'clickpick') {
-                            e.preventDefault();
-                            move = true;
-                            target = $('ul', this).addClass('dwa');
-                            $('.dwwb', this).fadeOut('fast');
-                            pos = target.data('pos');
-                            l = $('li:visible', target).length;
-                            start = getY(e);
-                            startTime = new Date();
-                            stop = start;
-                            inst.scroll(target, pos);
-                        }
-                    });
-                }
-
                 return this.each(function () {
                     if (!this.id) {
                         uuid += 1;
                         this.id = 'scoller' + uuid;
                     }
-                    scrollers[this.id] = new Scroller(this, dw, settings);
+                    scrollers[this.id] = new Scroller(this, $.extend({}, defaults, defs, options));
                 });
             },
             enable: function() {
@@ -1055,6 +1008,7 @@
             destroy: function() {
                 return this.each(function () {
                     if (scrollers[this.id]) {
+                        scrollers[this.id].hide();
                         $(this).unbind('focus.dw').removeClass('scroller');
                         if ($(this).is(':input'))
                             $(this).prop('readonly', $(this).data('dwro'));
@@ -1063,6 +1017,46 @@
                 });
             }
         };
+
+    $(document).bind(MOVE_EVENT, function (e) {
+        if (move) {
+            e.preventDefault();
+            stop = getY(e);
+            var val = pos + (stop - start) / h;
+            val = val > (m - 1 + 1) ? (m - 1 + 1) : val;
+            val = val < (m - l - 1) ? (m - l - 1) : val;
+            inst.scroll(target, val);
+        }
+    });
+
+    $(document).bind(END_EVENT, function (e) {
+        if (move) {
+            e.preventDefault();
+            target.removeClass('dwa');
+            var time = new Date() - startTime,
+                val = pos + (stop - start) / h;
+            val = val > (m - 1 + 1) ? (m - 1 + 1) : val;
+            val = val < (m - l - 1) ? (m - l - 1) : val;
+
+            if (time < 300) {
+                var speed = (stop - start) / time;
+                var dist = (speed * speed) / (2 * 0.0006);
+                if (stop - start < 0) dist = -dist;
+            }
+            else {
+                var dist = stop - start;
+            }
+            //var dist = stop - start;
+            calc(target, Math.round(pos + dist / h), true, Math.round(val));
+            move = false;
+            target = null;
+        }
+        clearInterval(plustap);
+        clearInterval(minustap);
+        plustap = false;
+        minustap = false;
+        $('.dwb-a').removeClass('dwb-a');
+    });
 
     $.fn.scroller = function (method) {
         if (methods[method]) {
@@ -1076,6 +1070,6 @@
         }
     }
 
-    $.scroller = new Scroller(null, null, defaults);
+    $.scroller = new Scroller(null, defaults);
 
 })(jQuery);

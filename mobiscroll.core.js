@@ -10,7 +10,8 @@
 
     function Scroller(elm, settings) {
         var that = this,
-            s = settings,
+            theme = $.extend({ defaults: {}, init: function() { } }, $.scroller.themes[settings.theme]),
+            s = $.extend({}, defaults, theme.defaults, settings),
             dw,
             iv = {},
             tv = {},
@@ -220,7 +221,7 @@
             s.wheels = that.preset.wheels();
 
             // Create wheels containers
-            var html = s.display == 'inline' ? '<div><div class="dw dwi ' + s.theme + '">' : '<div><div class="dwo"></div><div class="dw ' + s.theme + '">' + (s.headerText ? '<div class="dwv">' + formatHeader() + '</div>' : '');
+            var html = '<div class="' + s.theme + '">' + (s.display == 'inline' ? '<div class="dw dwi">' : '<div class="dwo"></div><div class="dw">' + (s.headerText ? '<div class="dwv">' + formatHeader() + '</div>' : ''));
             for (var i = 0; i < s.wheels.length; i++) {
                 html += '<div class="dwc' + (s.mode != 'scroller' ? ' dwpm' : '') + (s.showLabel ? '' : ' dwhl') + '"><div class="dwwc dwrc">';
                 // Create wheels
@@ -234,7 +235,7 @@
                 }
                 html += '<div class="dwcc"></div></div></div>';
             }
-            html += (s.display != 'inline' ? '<div class="dwbc"><span class="dwbw dwb-s"><a href="#" class="dwb"></a></span><span class="dwbw dwb-c"><a href="#" class="dwb"></a></span></div>' : '<div class="dwcc"></div>') + '</div></div>';
+            html += (s.display != 'inline' ? '<div class="dwbc"><span class="dwbw dwb-s"><a href="#" class="dwb">' + s.setText + '</a></span><span class="dwbw dwb-c"><a href="#" class="dwb">' + s.cancelText + '</a></span></div>' : '<div class="dwcc"></div>') + '</div></div>';
 
             dw = $(html);
 
@@ -243,6 +244,9 @@
             // Show
             s.display != 'inline' ? dw.appendTo('body') : input ? dw.insertAfter(elm) : elm.html(dw);
             visible = true;
+
+            // Theme init
+            theme.init(dw);
 
             // Set sizes
             $('.dww', dw).each(function() { $(this).width($(this).parent().width() < s.width ? s.width : $(this).parent().width()); });
@@ -257,14 +261,14 @@
 
             if (s.display != 'inline') {
                 // Init buttons
-                $('.dwb-s a', dw).text(s.setText).click(function (e) {
+                $('.dwb-s a', dw).click(function (e) {
                     that.setValue();
                     s.onSelect.call(e, that.val, that);
                     that.hide();
                     return false;
                 });
 
-                $('.dwb-c a', dw).text(s.cancelText).click(function (e) {
+                $('.dwb-c a', dw).click(function (e) {
                     s.onCancel.call(e, that.val, that);
                     that.hide();
                     return false;
@@ -515,41 +519,12 @@
         methods = {
             init: function (options) {
                 if (options === undefined) options = {};
-                var defs = {};
-                // Skin dependent defaults
-                switch (options.theme) {
-                    case 'ios':
-                        defs.dateOrder = 'MMdyy';
-                        defs.rows = 5;
-                        defs.height = 30;
-                        defs.width = 55;
-                        defs.showValue = false;
-                        defs.showLabel = false;
-                        break;
-                    case 'android':
-                        defs.dateOrder = 'Mddyy';
-                        break;
-                    case 'android-ics':
-                    case 'android-ics light':
-                        defs.dateOrder = 'Mddyy';
-                        defs.rows = 5;
-                        defs.width = 70;
-                        defs.showLabel = false;
-                        defs.mode = 'mixed';
-                        break;
-                }
-                // Mode dependent defaults
-                if (options.mode == 'clickpick') {
-                    defs.height = 50;
-                    defs.rows = 3;
-                }
-
                 return this.each(function () {
                     if (!this.id) {
                         uuid += 1;
                         this.id = 'scoller' + uuid;
                     }
-                    $(this).data('scroller', new Scroller(this, $.extend({}, defaults, defs, options)));
+                    $(this).data('scroller', new Scroller(this, options));
                 });
             },
             enable: function() {
@@ -681,7 +656,8 @@
         setDefaults: function(o) {
             $.extend(defaults, o);
         },
-        presets: { }
+        presets: {},
+        themes: {}
     }; //new Scroller(null, defaults);
 
 })(jQuery);

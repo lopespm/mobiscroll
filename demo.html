@@ -16,8 +16,16 @@
 
     <script src="mobiscroll.core.js" type="text/javascript"></script>
     <script src="mobiscroll.datetime.js" type="text/javascript"></script>
+    <script src="mobiscroll.jqm.js" type="text/javascript"></script>
+    <script src="mobiscroll.ios.js" type="text/javascript"></script>
+    <script src="mobiscroll.android.js" type="text/javascript"></script>
+    <script src="mobiscroll.android-ics.js" type="text/javascript"></script>
 
-    <link href="mobiscroll.css" rel="stylesheet" type="text/css" />
+    <link href="mobiscroll.core.css" rel="stylesheet" type="text/css" />
+    <link href="mobiscroll.android.css" rel="stylesheet" type="text/css" />
+    <link href="mobiscroll.android-ics.css" rel="stylesheet" type="text/css" />
+    <link href="mobiscroll.ios.css" rel="stylesheet" type="text/css" />
+    <link href="mobiscroll.sense-ui.css" rel="stylesheet" type="text/css" />
 
     <style type="text/css">
         body {
@@ -34,7 +42,7 @@
             // Date with external button
             $('#date1').scroller();
             // Time
-            $('#date2').scroller({ preset: 'time' });
+            $('#date2').scroller({ preset: 'time', theme: 'jqm' });
             // Datetime
             $('#date3').scroller({ preset: 'datetime' });
 

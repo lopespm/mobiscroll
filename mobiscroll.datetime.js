@@ -147,7 +147,7 @@
                  *
                  */
                 validate: function(i, dw) {
-                    /*if (p.match(/date/i) && ((i == yOrd) || (i == mOrd) || (i == -1))) {
+                    if (p.match(/date/i) && ((i == yOrd) || (i == mOrd) || (i == -1))) {
                         var days = 32 - new Date(inst.temp[yOrd], inst.temp[mOrd], 32).getDate() - 1;
                         var day = $('ul:eq(' + dOrd + ')', dw);
                         $('li', day).show();
@@ -156,7 +156,7 @@
                             inst.scroll(day, m - days - 1);
                             inst.temp[dOrd] = $('li:eq(' + days + ')', day).data('val');
                         }
-                    }*/
+                    }
                 },
                 methods: {
                     /**

@@ -5,14 +5,10 @@
     top: 5%;
     left: 0;
     z-index: 1001;
-    background: #fff;
     color: #000;
     font-family: arial, verdana, sans-serif;
     font-size: 12px;
     text-shadow: none;
-    border-radius: 3px;
-    -webkit-border-radius: 3px;
-    -moz-border-radius: 3px;
 }
 .dwi {
     position: static;
@@ -119,23 +115,13 @@
     cursor: pointer;
     width: 100%;
     height: 40px;
-    background: #ccc;
     text-align: center;
-    color: #888;
-    text-shadow: 0 -1px 1px #333;
-    box-shadow: 0 0 5px #333;
-    -webkit-box-shadow: 0 0 5px #333;
-    -moz-box-shadow: 0 0 5px #333;
 }
 .dwwbp {
     top: 0;
     -webkit-border-radius: 3px 3px 0 0;
     -moz-border-radius: 3px 3px 0 0;
     border-radius: 3px 3px 0 0;
-    background: -webkit-gradient(linear,left bottom,left top,color-stop(0, #bdbdbd),color-stop(1, #f7f7f7));
-    background: -moz-linear-gradient(#f7f7f7,#bdbdbd);
-    background: -ms-linear-gradient(#f7f7f7,#bdbdbd);
-    background: -o-linear-gradient(#f7f7f7,#bdbdbd);
     font-size: 40px;
 }
 .dwwbm {
@@ -143,10 +129,6 @@
     -webkit-border-radius: 0 0 3px 3px;
     -moz-border-radius: 0 0 3px 3px;
     border-radius: 0 0 3px 3px;
-    background: -webkit-gradient(linear,left bottom,left top,color-stop(0, #f7f7f7),color-stop(1, #bdbdbd));
-    background: -moz-linear-gradient(#bdbdbd,#f7f7f7);
-    background: -ms-linear-gradient(#bdbdbd,#f7f7f7);
-    background: -o-linear-gradient(#bdbdbd,#f7f7f7);
     font-size: 32px;
     font-weight: bold;
 }
@@ -191,7 +173,7 @@
     border-bottom: 1px solid #555;
 }
 /* Datewheel button */
-.dwb {
+.dwbg .dwb {
     display: block;
     height: 40px;
     line-height: 40px;
@@ -214,20 +196,6 @@
     background:-ms-linear-gradient(#6e6e6e 50%,#000 50%);
     background:-o-linear-gradient(#6e6e6e 50%,#000 50%);
 }
-.dwb-a {
-    background:#3c7500;
-    background:-webkit-gradient(linear,left bottom,left top,color-stop(0.5, #3c7500),color-stop(0.5, #94c840));
-    background:-moz-linear-gradient(#94c840 50%,#3c7500 50%);
-    background:-ms-linear-gradient(#94c840 50%,#3c7500 50%);
-    background:-o-linear-gradient(#94c840 50%,#3c7500 50%);
-}
-.dwwl .dwb-a {
-    background:#3c7500;
-    background:-webkit-gradient(linear,left bottom,left top,color-stop(0, #3c7500),color-stop(1, #94c840));
-    background:-moz-linear-gradient(#94c840,#3c7500);
-    background:-ms-linear-gradient(#94c840,#3c7500);
-    background:-o-linear-gradient(#94c840,#3c7500);
-}
 /* Datewheel button container */
 .dwbc {
     /*margin-top: 5px;*/
@@ -249,4 +217,45 @@
 }
 .dwhl .dww {
     top: 0;
+}
+/* Backgrounds */
+.dwbg {
+    background: #fff;
+    border-radius: 3px;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+}
+.dwbg .dwwb {
+    background: #ccc;
+    color: #888;
+    text-shadow: 0 -1px 1px #333;
+    box-shadow: 0 0 5px #333;
+    -webkit-box-shadow: 0 0 5px #333;
+    -moz-box-shadow: 0 0 5px #333;
+}
+.dwbg .dwwbp {
+    background: -webkit-gradient(linear,left bottom,left top,color-stop(0, #bdbdbd),color-stop(1, #f7f7f7));
+    background: -moz-linear-gradient(#f7f7f7,#bdbdbd);
+    background: -ms-linear-gradient(#f7f7f7,#bdbdbd);
+    background: -o-linear-gradient(#f7f7f7,#bdbdbd);
+}
+.dwbg .dwwbm {
+    background: -webkit-gradient(linear,left bottom,left top,color-stop(0, #f7f7f7),color-stop(1, #bdbdbd));
+    background: -moz-linear-gradient(#bdbdbd,#f7f7f7);
+    background: -ms-linear-gradient(#bdbdbd,#f7f7f7);
+    background: -o-linear-gradient(#bdbdbd,#f7f7f7);
+}
+.dwbg .dwb-a {
+    background:#3c7500;
+    background:-webkit-gradient(linear,left bottom,left top,color-stop(0.5, #3c7500),color-stop(0.5, #94c840));
+    background:-moz-linear-gradient(#94c840 50%,#3c7500 50%);
+    background:-ms-linear-gradient(#94c840 50%,#3c7500 50%);
+    background:-o-linear-gradient(#94c840 50%,#3c7500 50%);
+}
+.dwbg .dwwl .dwb-a {
+    background:#3c7500;
+    background:-webkit-gradient(linear,left bottom,left top,color-stop(0, #3c7500),color-stop(1, #94c840));
+    background:-moz-linear-gradient(#94c840,#3c7500);
+    background:-ms-linear-gradient(#94c840,#3c7500);
+    background:-o-linear-gradient(#94c840,#3c7500);
 }

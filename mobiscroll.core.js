@@ -221,7 +221,7 @@
             s.wheels = that.preset.wheels();
 
             // Create wheels containers
-            var html = '<div class="' + s.theme + '">' + (s.display == 'inline' ? '<div class="dw dwi">' : '<div class="dwo"></div><div class="dw">' + (s.headerText ? '<div class="dwv">' + formatHeader() + '</div>' : ''));
+            var html = '<div class="' + s.theme + '">' + (s.display == 'inline' ? '<div class="dw dwbg dwi"><div class="dwwr">' : '<div class="dwo"></div><div class="dw dwbg"><div class="dwwr">' + (s.headerText ? '<div class="dwv">' + formatHeader() + '</div>' : ''));
             for (var i = 0; i < s.wheels.length; i++) {
                 html += '<div class="dwc' + (s.mode != 'scroller' ? ' dwpm' : '') + (s.showLabel ? '' : ' dwhl') + '"><div class="dwwc dwrc">';
                 // Create wheels
@@ -235,7 +235,7 @@
                 }
                 html += '<div class="dwcc"></div></div></div>';
             }
-            html += (s.display != 'inline' ? '<div class="dwbc"><span class="dwbw dwb-s"><a href="#" class="dwb">' + s.setText + '</a></span><span class="dwbw dwb-c"><a href="#" class="dwb">' + s.cancelText + '</a></span></div>' : '<div class="dwcc"></div>') + '</div></div>';
+            html += (s.display != 'inline' ? '<div class="dwbc"><span class="dwbw dwb-s"><a href="#" class="dwb">' + s.setText + '</a></span><span class="dwbw dwb-c"><a href="#" class="dwb">' + s.cancelText + '</a></span></div>' : '<div class="dwcc"></div>') + '</div></div></div>';
 
             dw = $(html);
 
@@ -246,7 +246,7 @@
             visible = true;
 
             // Theme init
-            theme.init(dw);
+            theme.init(dw, that);
 
             // Set sizes
             $('.dww', dw).each(function() { $(this).width($(this).parent().width() < s.width ? s.width : $(this).parent().width()); });
@@ -463,7 +463,7 @@
         END_EVENT = touch ? 'touchend' : 'mouseup',
         defaults = {
             // Options
-            width: 80,
+            width: 70,
             height: 40,
             rows: 3,
             delay: 300,

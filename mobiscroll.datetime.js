@@ -29,14 +29,26 @@
             // Set year-month-day order
             var s = $.extend({}, defaults, inst.settings),
                 wheels = [],
+                ord = [],
+                o = { y: -1, m: -1, d: -1 },
+                f = { y: 'getFullYear', m: 'getMonth', d: 'getDate' },
                 p = s.preset,
-                m = Math.round(s.rows / 2),
-                ty = s.dateOrder.search(/y/i),
-                tm = s.dateOrder.search(/m/i),
-                td = s.dateOrder.search(/d/i),
-                yOrd = ty < tm ? (ty < td ? 0 : 1) : (ty < td ? 1 : 2),
-                mOrd = tm < ty ? (tm < td ? 0 : 1) : (tm < td ? 1 : 2),
-                dOrd = td < ty ? (td < tm ? 0 : 1) : (td < tm ? 1 : 2);
+                m = Math.round(s.rows / 2);
+
+            // Determine the order of year, month, day wheels
+            $.each(['y', 'm', 'd'], function(i, v) {
+                var i = s.dateOrder.search(new RegExp(v, 'i'));
+                if (i > -1)
+                    ord.push({ o: i, v: v });
+            });
+            ord.sort(function(a, b) { return a.o > b.o; });
+            $.each(ord, function(i, v) {
+                o[v.v] = i;
+            });
+
+            var yOrd = o.y,
+                mOrd = o.m,
+                dOrd = o.d;
 
             if (p.match(/date/i)) {
                 var w = {};
@@ -86,19 +98,26 @@
                 wheels.push(w);
             }
 
+            function get(d, i) {
+                if (o[i] > -1)
+                    return d[o[i]];
+                return new Date()[f[i]]();
+            }
+
             return {
                 wheels: wheels,
                 /**
                  *
                  */
                 formatResult: function(d) {
+
                     var that = $.scroller;
                     if (p == 'date') {
-                        return that.formatDate(s.dateFormat, new Date(d[yOrd], d[mOrd], d[dOrd]), s);
+                        return that.formatDate(s.dateFormat, new Date(get(d, 'y'), get(d, 'm'), get(d, 'd')), s);
                     }
                     else if (p == 'datetime') {
                         var hour = (s.ampm) ? ((d[s.seconds ? 6 : 5] == 'PM' && (d[3] - 0) < 12) ? (d[3] - 0 + 12) : (d[s.seconds ? 6 : 5] == 'AM' && (d[3] == 12) ? 0 : d[3])) : d[3];
-                        return that.formatDate(s.dateFormat + ' ' + s.timeFormat, new Date(d[yOrd], d[mOrd], d[dOrd], hour, d[4], s.seconds ? d[5] : null), s);
+                        return that.formatDate(s.dateFormat + ' ' + s.timeFormat, new Date(get(d, 'y'), get(d, 'm'), get(d, 'd'), hour, d[4], s.seconds ? d[5] : null), s);
                     }
                     else if (p == 'time') {
                         var hour = (s.ampm) ? ((d[s.seconds ? 3 : 2] == 'PM' && (d[0] - 0) < 12) ? (d[0] - 0 + 12) : (d[s.seconds ? 3 : 2] == 'AM' && (d[0] == 12) ? 0 : d[0])) : d[0];
@@ -113,9 +132,9 @@
                         result = [];
                     if (p == 'date') {
                         try { var d = that.parseDate(s.dateFormat, val, s); } catch (e) { var d = new Date(); };
-                        result[yOrd] = d.getFullYear();
-                        result[mOrd] = d.getMonth();
-                        result[dOrd] = d.getDate();
+                        // Set year, month, day slots
+                        for (var i in o)
+                            result[o[i]] = d[f[i]]();
                     }
                     else if (p == 'time') {
                         try { var d = that.parseDate(s.timeFormat, val, s); } catch (e) { var d = new Date(); };
@@ -128,9 +147,10 @@
                     else if (p == 'datetime') {
                         try { var d = that.parseDate(s.dateFormat + ' ' + s.timeFormat, val, s); } catch (e) { var d = new Date(); };
                         var hour = d.getHours();
-                        result[yOrd] = d.getFullYear();
-                        result[mOrd] = d.getMonth();
-                        result[dOrd] = d.getDate();
+                        // Set year, month, day slots
+                        for (var i in o)
+                            result[o[i]] = d[f[i]]();
+                        // Set time slots
                         result[3] = (s.ampm) ? (hour > 12 ? (hour - 12) : (hour == 0 ? 12 : hour)) : hour;
                         result[4] = d.getMinutes();
                         if (s.seconds) result[5] = d.getSeconds();
@@ -143,11 +163,12 @@
                  */
                 validate: function(i, dw) {
                     if (p.match(/date/i) && ((i == yOrd) || (i == mOrd) || (i == -1))) {
-                        var days = 32 - new Date(inst.temp[yOrd], inst.temp[mOrd], 32).getDate() - 1;
+                        var d = inst.temp;
+                        var days = 32 - new Date(get(d, 'y'), get(d, 'm'), 32).getDate() - 1;
                         var day = $('ul:eq(' + dOrd + ')', dw);
                         $('li', day).show();
                         $('li:gt(' + days + ')', day).hide();
-                        if (inst.temp[dOrd] > days) {
+                        if (get(d, 'd') > days) {
                             inst.scroll(day, m - days - 1);
                             inst.temp[dOrd] = $('li:eq(' + days + ')', day).data('val');
                         }
@@ -165,14 +186,14 @@
                                 s = inst.settings,
                                 p = s.preset;
                             if (p == 'date')
-                                return new Date(d[yOrd], d[mOrd], d[dOrd]);
+                                return new Date(get(d, 'y'), get(d, 'm'), get(d, 'd'));
                             if (p == 'time') {
                                 var hour = (s.ampm) ? ((d[s.seconds ? 3 : 2] == 'PM' && (d[0] - 0) < 12) ? (d[0] - 0 + 12) : (d[s.seconds ? 3 : 2] == 'AM' && (d[0] == 12) ? 0 : d[0])) : d[0];
                                 return new Date(1970, 0, 1, hour, d[1], s.seconds ? d[2] : null);
                             }
                             if (p == 'datetime') {
                                 var hour = (s.ampm) ? ((d[s.seconds ? 6 : 5] == 'PM' && (d[3] - 0) < 12) ? (d[3] - 0 + 12) : (d[s.seconds ? 6 : 5] == 'AM' && (d[3] == 12) ? 0 : d[3])) : d[3];
-                                return new Date(d[yOrd], d[mOrd], d[dOrd], hour, d[4], s.seconds ? d[5] : null);
+                                return new Date(get(d, 'y'), get(d, 'm'), get(d, 'd'), hour, d[4], s.seconds ? d[5] : null);
                             }
                         }
                     },
@@ -189,9 +210,9 @@
                                 var s = inst.settings,
                                 p = s.preset;
                                 if (p.match(/date/i)) {
-                                    inst.temp[yOrd] = d.getFullYear();
-                                    inst.temp[mOrd] = d.getMonth();
-                                    inst.temp[dOrd] = d.getDate();
+                                    // Set year, month, day slots
+                                    for (var i in o)
+                                        inst.temp[o[i]] = d[f[i]]();
                                 }
                                 if (p == 'time') {
                                     var hour = d.getHours();

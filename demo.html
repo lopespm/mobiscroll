@@ -41,6 +41,7 @@
 
     <script type="text/javascript">
         $(function () {
+            var curr = new Date().getFullYear();
             var opt = {
                 'date': {
                     preset: 'date',
@@ -54,16 +55,25 @@
                     preset: 'time',
                     display: 'modal'
                 },
+                'credit': {
+                    dateOrder: 'mmyy',
+                    dateFormat: 'mm/yy',
+                    startYear: curr,
+                    endYear: curr + 10,
+                    width: 100
+                },
                 'inline': {
                     display: 'inline'
                 }
             }
 
             $('select').scroller({ preset: 'select' }).change(function() {
-                $('#test').scroller('option', $.extend(opt[$('#demo').val()], { theme: $('#theme').val(), mode: $('#mode').val() }));
+                $('#test').scroller('destroy').scroller($.extend(opt[$('#demo').val()], { theme: $('#theme').val(), mode: $('#mode').val() }));
             });
 
-            $('#test').scroller();
+            $('#demo').change();
+
+            //$('#test').scroller();
 
         });
     </script>
@@ -103,7 +113,7 @@
                         <option value="date">Date</option>
                         <option value="datetime">Datetime</option>
                         <option value="time">Time</option>
-                        <!--<option value="custom">Custom select</option>-->
+                        <option value="credit" selected>Credit card expiration</option>
                         <option value="inline">Inline</option>
                     </select>
                 </div>

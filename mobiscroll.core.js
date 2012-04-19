@@ -346,10 +346,6 @@
             $.extend(s, theme.defaults, ss);
 
             that.settings = s;
-            that.values = null;
-            that.val = null;
-            // Temporary values
-            that.temp = null;
 
             var preset = $.scroller.presets[s.preset];
 
@@ -362,9 +358,11 @@
                 $.extend(methods, p.methods);
             }
 
-            if (elm.data('dwro') !== undefined) {
+            if (elm.data('dwro') !== undefined)
                 elm.prop('readonly', elm.data('dwro'));
-            }
+
+            if (visible)
+                that.hide();
 
             if (s.display == 'inline') {
                 that.show();
@@ -379,6 +377,10 @@
                 }
             }
         }
+
+        that.values = null;
+        that.val = null;
+        that.temp = null;
 
         that.init(settings);
     }

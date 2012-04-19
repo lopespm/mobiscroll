@@ -58,7 +58,7 @@
     -moz-border-radius: 0;
     -webkit-border-radius: 0;
 }
-.android .dwb-a {
+.android .dwb-a, .android .dwwl .dwb-a {
     background: #ffb25a;
     background: -webkit-gradient(linear,left bottom,left top,color-stop(0, #ef6100),color-stop(1, #ffb25a));
     background: -moz-linear-gradient(#ffb25a,#ef6100);

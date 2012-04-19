@@ -81,6 +81,8 @@
     overflow: hidden;
     position: relative;
     top: -30px;
+}
+.dwsc .dww {
     color: #fff;
     background: #444;
     background: -webkit-gradient(linear,left bottom,left top,color-stop(0, #000),color-stop(0.45, #444),color-stop(0.55, #444),color-stop(1, #000));
@@ -105,6 +107,7 @@
     text-align: center;
     line-height: 40px;
     font-size: 26px;
+    white-space:nowrap;
     text-shadow:0 1px 1px #000;
 }
 /* Wheel +/- buttons */
@@ -137,9 +140,6 @@
 }
 .dwpm .dww {
     margin: -1px;
-    color: #000;
-    background: #fff;
-    border: 1px solid #AAA;
 }
 .dwpm .dww li {
     text-shadow: none;
@@ -224,6 +224,11 @@
     border-radius: 3px;
     -webkit-border-radius: 3px;
     -moz-border-radius: 3px;
+}
+.dwbg .dwpm .dww {
+    color: #000;
+    background: #fff;
+    border: 1px solid #AAA;
 }
 .dwbg .dwwb {
     background: #ccc;

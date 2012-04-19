@@ -26,6 +26,10 @@
 .android-ics .dww {
     border: 0;
 }
+.android-ics .dwpm .dww {
+    border: 0;
+    background: none;
+}
 .android-ics .dww li {
     color: #fff;
     font-size: 18px;
@@ -102,7 +106,7 @@
 .android-ics .dwb-s .dwb {
     border-right: 1px solid #424542;
 }
-.android-ics.light {
+.android-ics.light .dw {
     background: #f5f5f5;
 }
 .android-ics.light .dww li {

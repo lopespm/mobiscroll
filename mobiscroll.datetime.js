@@ -25,10 +25,10 @@
             stepMinute: 1,
             stepSecond: 1
         },
-        preset = function() {
+        preset = function(inst) {
             // Set year-month-day order
-            var inst = this,
-                s = $.extend({}, defaults, inst.settings),
+            var s = $.extend({}, defaults, inst.settings),
+                wheels = [],
                 p = s.preset,
                 m = Math.round(s.rows / 2),
                 ty = s.dateOrder.search(/y/i),
@@ -38,61 +38,56 @@
                 mOrd = tm < ty ? (tm < td ? 0 : 1) : (tm < td ? 1 : 2),
                 dOrd = td < ty ? (td < tm ? 0 : 1) : (td < tm ? 1 : 2);
 
+            if (p.match(/date/i)) {
+                var w = {};
+                for (var k = 0; k < 3; k++) {
+                    if (k == yOrd) {
+                        w[s.yearText] = {};
+                        for (var i = s.startYear; i <= s.endYear; i++)
+                            w[s.yearText][i] = s.dateOrder.search(/yy/i) < 0 ? i.toString().substr(2, 2) : i.toString();
+                    }
+                    else if (k == mOrd) {
+                        w[s.monthText] = {};
+                        for (var i = 0; i < 12; i++)
+                            w[s.monthText][i] =
+                                (s.dateOrder.search(/MM/) < 0 ?
+                                (s.dateOrder.search(/M/) < 0 ?
+                                (s.dateOrder.search(/mm/) < 0 ? (i + 1) : (i < 9) ? ('0' + (i + 1)) : (i + 1)) : s.monthNamesShort[i]) : s.monthNames[i]);
+                    }
+                    else if (k == dOrd) {
+                        w[s.dayText] = {};
+                        for (var i = 1; i < 32; i++)
+                            w[s.dayText][i] = s.dateOrder.search(/dd/i) < 0 ? i : (i < 10) ? ('0' + i) : i;
+                    }
+                }
+                wheels.push(w);
+            }
+            if (p.match(/time/i)) {
+                s.stepHour = (s.stepHour < 1) ? 1 : parseInt(s.stepHour);
+                s.stepMinute = (s.stepMinute < 1) ? 1 : parseInt(s.stepMinute);
+                s.stepSecond = (s.stepSecond < 1) ? 1 : parseInt(s.stepSecond);
+                var w = {};
+                w[s.hourText] = {};
+                for (var i = (s.ampm ? 1 : 0); i < (s.ampm ? 13 : 24); i += s.stepHour)
+                    w[s.hourText][i] = (i < 10) ? ('0' + i) : i;
+                w[s.minuteText] = {};
+                for (var i = 0; i < 60; i += s.stepMinute)
+                    w[s.minuteText][i] = (i < 10) ? ('0' + i) : i;
+                if (s.seconds) {
+                    w[s.secText] = {};
+                    for (var i = 0; i < 60; i += s.stepSecond)
+                        w[s.secText][i] = (i < 10) ? ('0' + i) : i;
+                }
+                if (s.ampm) {
+                    w[s.ampmText] = {};
+                    w[s.ampmText]['AM'] = 'AM';
+                    w[s.ampmText]['PM'] = 'PM';
+                }
+                wheels.push(w);
+            }
+
             return {
-                /**
-                 *
-                 */
-                wheels: function() {
-                    var wheels = [];
-                    if (p.match(/date/i)) {
-                        var w = {};
-                        for (var k = 0; k < 3; k++) {
-                            if (k == yOrd) {
-                                w[s.yearText] = {};
-                                for (var i = s.startYear; i <= s.endYear; i++)
-                                    w[s.yearText][i] = s.dateOrder.search(/yy/i) < 0 ? i.toString().substr(2, 2) : i.toString();
-                            }
-                            else if (k == mOrd) {
-                                w[s.monthText] = {};
-                                for (var i = 0; i < 12; i++)
-                                    w[s.monthText][i] =
-                                        (s.dateOrder.search(/MM/) < 0 ?
-                                        (s.dateOrder.search(/M/) < 0 ?
-                                        (s.dateOrder.search(/mm/) < 0 ? (i + 1) : (i < 9) ? ('0' + (i + 1)) : (i + 1)) : s.monthNamesShort[i]) : s.monthNames[i]);
-                            }
-                            else if (k == dOrd) {
-                                w[s.dayText] = {};
-                                for (var i = 1; i < 32; i++)
-                                    w[s.dayText][i] = s.dateOrder.search(/dd/i) < 0 ? i : (i < 10) ? ('0' + i) : i;
-                            }
-                        }
-                        wheels.push(w);
-                    }
-                    if (p.match(/time/i)) {
-                        s.stepHour = (s.stepHour < 1) ? 1 : parseInt(s.stepHour);
-                        s.stepMinute = (s.stepMinute < 1) ? 1 : parseInt(s.stepMinute);
-                        s.stepSecond = (s.stepSecond < 1) ? 1 : parseInt(s.stepSecond);
-                        var w = {};
-                        w[s.hourText] = {};
-                        for (var i = (s.ampm ? 1 : 0); i < (s.ampm ? 13 : 24); i += s.stepHour)
-                            w[s.hourText][i] = (i < 10) ? ('0' + i) : i;
-                        w[s.minuteText] = {};
-                        for (var i = 0; i < 60; i += s.stepMinute)
-                            w[s.minuteText][i] = (i < 10) ? ('0' + i) : i;
-                        if (s.seconds) {
-                            w[s.secText] = {};
-                            for (var i = 0; i < 60; i += s.stepSecond)
-                                w[s.secText][i] = (i < 10) ? ('0' + i) : i;
-                        }
-                        if (s.ampm) {
-                            w[s.ampmText] = {};
-                            w[s.ampmText]['AM'] = 'AM';
-                            w[s.ampmText]['PM'] = 'PM';
-                        }
-                        wheels.push(w);
-                    }
-                    return wheels;
-                },
+                wheels: wheels,
                 /**
                  *
                  */

@@ -10,21 +10,15 @@
 
     function Scroller(elm, settings) {
         var that = this,
-            theme = $.extend({ defaults: {}, init: function() { } }, $.scroller.themes[settings.theme]),
-            s = $.extend({}, defaults, theme.defaults, settings),
+            e = elm,
+            elm = $(e),
+            theme,
+            s = $.extend({}, defaults),
             dw,
             iv = {},
             tv = {},
-            e = elm,
-            elm = $(e),
             input = elm.is('input'),
             visible = false;
-
-        that.settings = s;
-        that.values = null;
-        that.val = null;
-        // Temporary values
-        that.temp = null;
 
         // Private functions
 
@@ -36,7 +30,12 @@
         }
 
         function formatHeader() {
-            return s.headerText ? s.headerText.replace(/{value}/i, that.formatResult()) : '';
+            return s.headerText ? s.headerText.replace(/{value}/i, s.formatResult(that.temp)) : '';
+        }
+
+        function read() {
+            that.temp = ((input && that.val !== null && that.val != elm.val()) || that.values === null) ? s.parseValue(elm.val() ? elm.val() : '', that) : that.values.slice(0);
+            that.setValue(false);
         }
 
         function scrollToPos() {
@@ -50,6 +49,29 @@
             });
             // Initial validate
             that.validate(-1);
+        }
+
+        function position() {
+            var totalw = 0,
+                minw = 0,
+                ww = $(window).width(),
+                wh = $(window).height(),
+                st = $(window).scrollTop(),
+                o = $('.dwo', dw),
+                d = $('.dw', dw),
+                w,
+                h;
+            $('.dwc', dw).each(function() {
+                w = $(this).outerWidth(true);
+                totalw += w;
+                minw = (w > minw) ? w : minw;
+            });
+            w = totalw > ww ? minw : totalw;
+            d.width(w);
+            w = d.outerWidth();
+            h = d.outerHeight();
+            d.css({ left: (ww - w) / 2, top: st + (wh - h) / 2 });
+            o.height(0).height($(document).height());
         }
 
         function plus(t) {
@@ -75,6 +97,8 @@
                 clearInterval(minustap);
             }
         }
+
+        // Public functions
 
         /**
         * Enables the scroller and the associated input.
@@ -139,28 +163,11 @@
         */
         that.setValue = function (fill) {
             if (fill == undefined) fill = true;
-            var v = that.formatResult();
+            var v = s.formatResult(that.temp);
             that.val = v;
             that.values = that.temp.slice(0);
             if (visible) scrollToPos();
             if (fill && input) elm.val(v).change();
-        }
-
-        /**
-        * Extracts the selected wheel values form the string value.
-        * @param {String} val - String to parse.
-        * @return {Array} Array with the selected wheel values.
-        */
-        that.parseValue = function (val) {
-            return that.preset.parseValue(val, that);
-        }
-
-        /**
-        * Formats the selected wheel values form the required format.
-        * @return {String} Formatted string.
-        */
-        that.formatResult = function () {
-            return that.preset.formatResult(that.temp);
         }
 
         /**
@@ -170,14 +177,14 @@
         */
         that.validate = function(i) {
             // If target is month, show/hide days
-            that.preset.validate(i, dw)
+            s.validate(i, dw)
         }
 
         /**
          *
          */
         that.change = function () {
-            var v = that.formatResult();
+            var v = s.formatResult(that.temp);
             if (s.display == 'inline' && input)
                 elm.val(v);
             else
@@ -215,15 +222,13 @@
             var hi = s.height,
                 thi = s.rows * hi;
 
-            that.init();
-
-            // Create preset wheels
-            s.wheels = that.preset.wheels();
+            // Parse value from input
+            read();
 
             // Create wheels containers
             var html = '<div class="' + s.theme + '">' + (s.display == 'inline' ? '<div class="dw dwbg dwi"><div class="dwwr">' : '<div class="dwo"></div><div class="dw dwbg"><div class="dwwr">' + (s.headerText ? '<div class="dwv">' + formatHeader() + '</div>' : ''));
             for (var i = 0; i < s.wheels.length; i++) {
-                html += '<div class="dwc' + (s.mode != 'scroller' ? ' dwpm' : '') + (s.showLabel ? '' : ' dwhl') + '"><div class="dwwc dwrc">';
+                html += '<div class="dwc' + (s.mode != 'scroller' ? ' dwpm' : ' dwsc') + (s.showLabel ? '' : ' dwhl') + '"><div class="dwwc dwrc">';
                 // Create wheels
                 for (var label in s.wheels[i]) {
                     html += '<div class="dwwl dwrc" style="height:' + thi + 'px;">' + (s.mode != 'scroller' ? '<div class="dwwb dwwbp" style="height:' + hi + 'px;line-height:' + hi + 'px;"><span>+</span></div><div class="dwwb dwwbm" style="height:' + hi + 'px;line-height:' + hi + 'px;"><span>&ndash;</span></div>' : '') + '<div class="dwl">' + label + '</div><div class="dww dwrc" style="height:' + thi + 'px;"><ul>';
@@ -279,8 +284,8 @@
                 $(':input').prop('disabled', true);
 
                 // Set position
-                that.pos();
-                $(window).on('resize.dw', function() { that.pos(); });
+                position();
+                $(window).on('resize.dw', position);
             }
 
             // Events
@@ -332,70 +337,50 @@
         }
 
         /**
-        * Positions the scroller instance to the center of the viewport.
-        */
-        that.pos = function() {
-            var totalw = 0,
-                minw = 0,
-                ww = $(window).width(),
-                wh = $(window).height(),
-                st = $(window).scrollTop(),
-                o = $('.dwo', dw),
-                d = $('.dw', dw),
-                w,
-                h;
-            $('.dwc', dw).each(function() {
-                w = $(this).outerWidth(true);
-                totalw += w;
-                minw = (w > minw) ? w : minw;
-            });
-            w = totalw > ww ? minw : totalw;
-            d.width(w);
-            w = d.outerWidth();
-            h = d.outerHeight();
-            d.css({ left: (ww - w) / 2, top: st + (wh - h) / 2 });
-            o.height(0).height($(document).height());
-        }
-
-        /**
         * Scroller initialization.
         */
-        that.init = function() {
-            that.temp = ((input && that.val !== null && that.val != elm.val()) || that.values === null) ? that.parseValue(elm.val() ? elm.val() : '') : that.values.slice(0);
-            that.setValue(false);
+        that.init = function(ss) {
+            // Get theme defaults
+            theme = $.extend({ defaults: {}, init: function() { } }, $.scroller.themes[ss.theme]);
+
+            $.extend(s, theme.defaults, ss);
+
+            that.settings = s;
+            that.values = null;
+            that.val = null;
+            // Temporary values
+            that.temp = null;
+
+            var preset = $.scroller.presets[s.preset];
+
+            elm.off('.dw');
+
+            if (preset) {
+                var p = preset.call(e, that)
+                $.extend(s, p, ss)
+                // Extend core methods
+                $.extend(methods, p.methods);
+            }
+
+            if (elm.data('dwro') !== undefined) {
+                elm.prop('readonly', elm.data('dwro'));
+            }
+
+            if (s.display == 'inline') {
+                that.show();
+            }
+            else {
+                read();
+                if (input && s.showOnFocus) {
+                    // Set element readonly, save original state
+                    elm.data('dwro', elm.prop('readonly')).prop('readonly', true);
+                    // Init show datewheel
+                    elm.on('focus.dw', that.show);
+                }
+            }
         }
 
-        // Constructor
-
-        that.preset = {
-            wheels: function() { return s.wheels; },
-            formatResult: s.formatResult,
-            parseValue: s.parseValue,
-            validate: s.validate,
-            methods: {}
-        }
-
-        if (!s.wheels) {
-            // Load preset
-            $.extend(that.preset, $.scroller.presets[s.preset].call(this));
-            $.extend(methods, that.preset.methods);
-        }
-
-        if (s.display == 'inline') {
-            that.show();
-        }
-        else {
-            that.init();
-            // Set element readonly, save original state
-            if (input && s.showOnFocus)
-                elm.data('dwro', elm.prop('readonly')).prop('readonly', true);
-
-            // Init show datewheel
-            elm.addClass('scroller').off('focus.dw').on('focus.dw', function (e) {
-                if (s.showOnFocus)
-                    that.show();
-            });
-        }
+        that.init(settings);
     }
 
     function testProps(props) {
@@ -548,11 +533,12 @@
                 return this.each(function () {
                     var inst = getInst(this);
                     if (inst) {
+                        var obj = {};
                         if (typeof option === 'object')
-                            $.extend(inst.settings, option);
+                            obj = option;
                         else
-                            inst.settings[option] = value;
-                        //inst.init();
+                            obj[option] = value;
+                        inst.init(obj);
                     }
                 });
             },
@@ -588,8 +574,8 @@
                     var inst = getInst(this);
                     if (inst) {
                         inst.hide();
-                        $(this).off('.dw').removeClass('scroller').removeData('scroller');
-                        if ($(this).is(':input'))
+                        $(this).off('.dw').removeData('scroller');
+                        if ($(this).is('input'))
                             $(this).prop('readonly', $(this).data('dwro'));
                     }
                 });
@@ -624,7 +610,6 @@
             else {
                 var dist = stop - start;
             }
-            //var dist = stop - start;
             calc(target, Math.round(pos + dist / h), true, Math.round(val));
             move = false;
             target = null;
@@ -658,6 +643,6 @@
         },
         presets: {},
         themes: {}
-    }; //new Scroller(null, defaults);
+    };
 
 })(jQuery);

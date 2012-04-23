@@ -107,8 +107,14 @@
     text-align: center;
     line-height: 40px;
     font-size: 26px;
-    white-space:nowrap;
-    text-shadow:0 1px 1px #000;
+    white-space: nowrap;
+    text-shadow: 0 1px 1px #000;
+    opacity: .3;
+    filter: Alpha(Opacity=30);
+}
+.dww li.valid {
+    opacity: 1;
+    filter: Alpha(Opacity=100);
 }
 /* Wheel +/- buttons */
 .dwwb {

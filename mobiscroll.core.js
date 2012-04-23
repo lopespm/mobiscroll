@@ -1,5 +1,5 @@
 ﻿/*!
- * jQuery MobiScroll v1.6
+ * jQuery MobiScroll v2.0
  * http://mobiscroll.com
  *
  * Copyright 2010-2011, Acid Media
@@ -14,6 +14,7 @@
             elm = $(e),
             theme,
             s = $.extend({}, defaults),
+            m,
             dw,
             iv = {},
             tv = {},
@@ -23,14 +24,14 @@
         // Private functions
 
         function setGlobals(t) {
-            l = $('li:visible', t).length;
+            min = $('li.valid:first', t).index();
+            max = $('li.valid:last', t).index();
             h = s.height;
-            m = Math.round(s.rows / 2);
             inst = that;
         }
 
-        function formatHeader() {
-            return s.headerText ? s.headerText.replace(/{value}/i, s.formatResult(that.temp)) : '';
+        function formatHeader(v) {
+            return s.headerText ? s.headerText.replace(/{value}/i, v) : '';
         }
 
         function read() {
@@ -41,14 +42,13 @@
         function scrollToPos() {
             // Set scrollers to position
             $('.dww ul', dw).each(function(i) {
-                var x = $('li', this).index($('li[data-val="' + that.temp[i] + '"]', this));
-                while ((x < 0) && (--that.temp[i] >= 0)) {
-                    x = $('li', this).index($('li[data-val="' + that.temp[i] + '"]', this));
-                }
-                that.scroll($(this), Math.round(s.rows / 2) - (x < 0 ? 0 : x) - 1);
+                var x = $('li[data-val="' + that.temp[i] + '"]', this).index();
+                that.scroll($(this), x < 0 ? 0 : x);
             });
             // Initial validate
-            that.validate(-1);
+            that.validate();
+            // Refromat value if validation changed something
+            that.change();
         }
 
         function position() {
@@ -77,9 +77,8 @@
         function plus(t) {
             if (plustap) {
                 var p = t.data('pos'),
-                    val = p - 1;
-                val = val < (m - l) ? (m - 1) : val;
-                calc(t, val);
+                    val = p + 1;
+                calc(t, val > max ? min : val);
             }
             else {
                 clearInterval(plustap);
@@ -89,9 +88,9 @@
         function minus(t) {
             if (minustap) {
                 var p = t.data('pos'),
-                    val = p + 1;
-                val = val > (m - 1) ? (m - l) : val;
-                calc(t, val);
+                    val = p - 1;
+
+                calc(t, val < min ? max : val);
             }
             else {
                 clearInterval(minustap);
@@ -125,9 +124,8 @@
         * @param {Number} [time] - Duration of the animation, optional.
         */
         that.scroll = function(t, val, time, orig, index) {
-            var h = s.height;
-            //t.data('pos', val)
-            t.attr('style', (time ? (prefix + '-transition:all ' + time.toFixed(1) + 's ease-out;') : '') + (has3d ? (prefix + '-transform:translate3d(0,' + (val * h) + 'px,0);') : ('top:' + (val * h) + 'px;')));
+            var px = (m - val) * s.height;
+            t.attr('style', (time ? (prefix + '-transition:all ' + time.toFixed(1) + 's ease-out;') : '') + (has3d ? (prefix + '-transform:translate3d(0,' + px + 'px,0);') : ('top:' + px + 'px;')));
 
             function getVal(t, b, c, d) {
                 return c * Math.sin(t/d * (Math.PI/2)) + b;
@@ -175,21 +173,22 @@
         * In case of date presets it checks the number of days in a month.
         * @param {Integer} i - Currently changed wheel index, -1 if initial validation.
         */
-        that.validate = function(i) {
+        that.validate = function (i) {
             // If target is month, show/hide days
-            s.validate(i, dw)
+            s.validate.call(e, dw, i)
         }
 
         /**
          *
          */
-        that.change = function () {
+        that.change = function (manual) {
             var v = s.formatResult(that.temp);
             if (s.display == 'inline' && input)
                 elm.val(v);
             else
-                $('.dwv', dw).html(formatHeader());
-            s.onChange.call(e, v, that);
+                $('.dwv', dw).html(formatHeader(v));
+            if (manual)
+                s.onChange.call(e, v, that);
         }
 
         /**
@@ -204,11 +203,9 @@
             // Hide wheels and overlay
             if (dw)
                 dw.remove();
-            //if (that.preset)
-            //s.wheels = null;
             visible = false;
             // Stop positioning on window resize
-            $(window).off('resize.dw');
+            $(window).unbind('.dw');
         }
 
         /**
@@ -217,8 +214,6 @@
         that.show = function () {
             if (s.disabled || visible) return false;
 
-            s.beforeShow.call(e, e, that);
-
             var hi = s.height,
                 thi = s.rows * hi;
 
@@ -226,7 +221,7 @@
             read();
 
             // Create wheels containers
-            var html = '<div class="' + s.theme + '">' + (s.display == 'inline' ? '<div class="dw dwbg dwi"><div class="dwwr">' : '<div class="dwo"></div><div class="dw dwbg"><div class="dwwr">' + (s.headerText ? '<div class="dwv">' + formatHeader() + '</div>' : ''));
+            var html = '<div class="' + s.theme + '">' + (s.display == 'inline' ? '<div class="dw dwbg dwi"><div class="dwwr">' : '<div class="dwo"></div><div class="dw dwbg"><div class="dwwr">' + (s.headerText ? '<div class="dwv"></div>' : ''));
             for (var i = 0; i < s.wheels.length; i++) {
                 html += '<div class="dwc' + (s.mode != 'scroller' ? ' dwpm' : ' dwsc') + (s.showLabel ? '' : ' dwhl') + '"><div class="dwwc dwrc">';
                 // Create wheels
@@ -234,7 +229,7 @@
                     html += '<div class="dwwl dwrc" style="height:' + thi + 'px;">' + (s.mode != 'scroller' ? '<div class="dwwb dwwbp" style="height:' + hi + 'px;line-height:' + hi + 'px;"><span>+</span></div><div class="dwwb dwwbm" style="height:' + hi + 'px;line-height:' + hi + 'px;"><span>&ndash;</span></div>' : '') + '<div class="dwl">' + label + '</div><div class="dww dwrc" style="height:' + thi + 'px;"><ul>';
                     // Create wheel values
                     for (var j in s.wheels[i][label]) {
-                        html += '<li data-val="' + j + '" style="line-height:' + hi + 'px;">' + s.wheels[i][label][j] + '</li>';
+                        html += '<li class="valid" data-val="' + j + '" style="line-height:' + hi + 'px;">' + s.wheels[i][label][j] + '</li>';
                     }
                     html += '</ul><div class="dwwo"></div></div><div class="dwwol"></div></div>';
                 }
@@ -266,16 +261,16 @@
 
             if (s.display != 'inline') {
                 // Init buttons
-                $('.dwb-s a', dw).click(function (e) {
+                $('.dwb-s a', dw).click(function () {
                     that.setValue();
-                    s.onSelect.call(e, that.val, that);
                     that.hide();
+                    s.onSelect.call(e, that.val, that);
                     return false;
                 });
 
-                $('.dwb-c a', dw).click(function (e) {
-                    s.onCancel.call(e, that.val, that);
+                $('.dwb-c a', dw).click(function () {
                     that.hide();
+                    s.onCancel.call(e, that.val, that);
                     return false;
                 });
 
@@ -285,7 +280,7 @@
 
                 // Set position
                 position();
-                $(window).on('resize.dw', position);
+                $(window).bind('resize.dw', position);
             }
 
             // Events
@@ -334,6 +329,8 @@
                     that.scroll(target, pos);
                 }
             });
+
+            s.onShow.call(e, dw, that);
         }
 
         /**
@@ -341,15 +338,17 @@
         */
         that.init = function(ss) {
             // Get theme defaults
-            theme = $.extend({ defaults: {}, init: function() { } }, $.scroller.themes[ss.theme]);
+            theme = $.extend({ defaults: {}, init: empty }, $.scroller.themes[ss.theme]);
 
             $.extend(s, theme.defaults, ss);
 
             that.settings = s;
 
+            m = Math.floor(s.rows / 2);
+
             var preset = $.scroller.presets[s.preset];
 
-            elm.off('.dw');
+            elm.unbind('.dw');
 
             if (preset) {
                 var p = preset.call(e, that)
@@ -373,7 +372,7 @@
                     // Set element readonly, save original state
                     elm.data('dwro', elm.prop('readonly')).prop('readonly', true);
                     // Init show datewheel
-                    elm.on('focus.dw', that.show);
+                    elm.bind('focus.dw', that.show);
                 }
             }
         }
@@ -414,23 +413,24 @@
     function calc(t, val, anim, orig) {
         var dw = t.closest('.dw'),
             i = $('ul', dw).index(t);
-        val = val > (m - 1) ? (m - 1) : val;
-        val = val < (m - l) ? (m - l) : val;
+        val = val > max ? max : val;
+        val = val < min ? min : val;
         // Call scroll with animation (calc animation time)
         inst.scroll(t, val, anim ? (val == orig ? 0.1 : Math.abs((val - orig) * 0.1)) : 0, orig, i);
         // Set selected scroller value
-        inst.temp[i] = $('li:eq(' + (m - 1 - val) + ')', t).data('val');
+        inst.temp[i] = $('li:eq(' + val + ')', t).data('val');
         // Validate
         inst.validate(i);
         // Set value text
-        inst.change();
+        inst.change(true);
     }
 
     var plustap = false,
         minustap = false,
+        empty = function() {},
         h,
-        m,
-        l,
+        min,
+        max,
         inst, // Current instance
         date = new Date(),
         uuid = date.getTime(),
@@ -466,11 +466,12 @@
             setText: 'Set',
             cancelText: 'Cancel',
             // Events
-            beforeShow: function() {},
-            onClose: function() {},
-            onSelect: function() {},
-            onCancel: function() {},
-            onChange: function() {},
+            //beforeShow: empty,
+            onShow: empty,
+            onClose: empty,
+            onSelect: empty,
+            onCancel: empty,
+            onChange: empty,
             formatResult: function(d) {
                 var out = '';
                 for (var i = 0; i < d.length; i++) {
@@ -498,9 +499,7 @@
                 }
                 return ret;
             },
-            validate: function() {
-                return true;
-            }
+            validate: empty
         },
 
         methods = {
@@ -576,7 +575,7 @@
                     var inst = getInst(this);
                     if (inst) {
                         inst.hide();
-                        $(this).off('.dw').removeData('scroller');
+                        $(this).unbind('.dw').removeData('scroller');
                         if ($(this).is('input'))
                             $(this).prop('readonly', $(this).data('dwro'));
                     }
@@ -584,25 +583,25 @@
             }
         };
 
-    $(document).on(MOVE_EVENT, function (e) {
+    $(document).bind(MOVE_EVENT, function (e) {
         if (move) {
             e.preventDefault();
             stop = getY(e);
-            var val = pos + (stop - start) / h;
-            val = val > (m - 1 + 1) ? (m - 1 + 1) : val;
-            val = val < (m - l - 1) ? (m - l - 1) : val;
+            var val = pos + (start - stop) / h;
+            val = val > (max + 1) ? (max + 1) : val;
+            val = val < (min - 1) ? (min - 1) : val;
             inst.scroll(target, val);
         }
     });
 
-    $(document).on(END_EVENT, function (e) {
+    $(document).bind(END_EVENT, function (e) {
         if (move) {
             e.preventDefault();
             target.removeClass('dwa');
             var time = new Date() - startTime,
-                val = pos + (stop - start) / h;
-            val = val > (m - 1 + 1) ? (m - 1 + 1) : val;
-            val = val < (m - l - 1) ? (m - l - 1) : val;
+                val = pos + (start - stop) / h;
+            val = val > (max + 1) ? (max + 1) : val;
+            val = val < (min - 1) ? (min - 1) : val;
 
             if (time < 300) {
                 var speed = (stop - start) / time;
@@ -612,7 +611,7 @@
             else {
                 var dist = stop - start;
             }
-            calc(target, Math.round(pos + dist / h), true, Math.round(val));
+            calc(target, Math.round(pos - dist / h), true, Math.round(val));
             move = false;
             target = null;
         }

@@ -4,9 +4,10 @@
         defaults = {
             dateFormat: 'mm/dd/yy',
             dateOrder: 'mmddy',
-            ampm: true,
-            seconds: false,
+            timeWheels: 'hhiiA',
             timeFormat: 'hh:ii A',
+            //ampm: true,
+            //seconds: false,
             startYear: date.getFullYear() - 100,
             endYear: date.getFullYear() + 1,
             monthNames: ['January','February','March','April','May','June', 'July','August','September','October','November','December'],
@@ -23,7 +24,8 @@
             ampmText: '&nbsp;',
             stepHour: 1,
             stepMinute: 1,
-            stepSecond: 1
+            stepSecond: 1,
+            separator: ' '
         },
         preset = function(inst) {
             // Set year-month-day order
@@ -35,6 +37,10 @@
                 f = { y: 'getFullYear', m: 'getMonth', d: 'getDate', h: getHour, i: getMinute, s: getSecond, ap: getAmPm },
                 p = s.preset,
                 dord = s.dateOrder,
+                tord = s.timeWheels,
+                regen = dord.match(/D/),
+                ampm = tord.match(/a/i),
+                hampm = tord.match(/h/),
                 format = '',
                 defd = new Date(),
                 stepH = s.stepHour,
@@ -48,7 +54,7 @@
             else if (p == 'time')
                 format = s.timeFormat;
             else if (p == 'datetime')
-                format = s.dateFormat + ' ' + s.timeFormat;
+                format = s.dateFormat + s.separator + s.timeFormat;
 
             if (p.match(/date/i)) {
 
@@ -71,45 +77,50 @@
                         start = mind ? mind.getFullYear() : s.startYear;
                         end = maxd ? maxd.getFullYear() : s.endYear;
                         for (var i = start; i <= end; i++)
-                            w[s.yearText][i] = dord.search(/yy/i) < 0 ? i.toString().substr(2, 2) : i.toString();
+                            w[s.yearText][i] = dord.match(/yy/i) ? i : (i + '').substr(2, 2);
                     }
                     else if (k == o.m) {
                         offset++;
                         w[s.monthText] = {};
                         for (var i = 0; i < 12; i++)
                             w[s.monthText][i] =
-                                (dord.search(/MM/) < 0 ?
-                                (dord.search(/M/) < 0 ?
-                                (dord.search(/mm/) < 0 ? (i + 1) : (i < 9) ? ('0' + (i + 1)) : (i + 1)) : s.monthNamesShort[i]) : s.monthNames[i]);
+                                dord.match(/MM/) ? s.monthNames[i] :
+                                dord.match(/M/) ? s.monthNamesShort[i] :
+                                dord.match(/mm/) && i < 9 ? '0' + (i + 1) : i + 1;
                     }
                     else if (k == o.d) {
                         offset++;
                         w[s.dayText] = {};
                         for (var i = 1; i < 32; i++)
-                            w[s.dayText][i] = dord.search(/dd/i) < 0 ? i : (i < 10) ? ('0' + i) : i;
+                            w[s.dayText][i] = dord.match(/dd/i) && i < 10 ? '0' + i : i;
                     }
                 }
                 wheels.push(w);
             }
             if (p.match(/time/i)) {
-                o.h = offset++; // Hours wheel order
-                o.i = offset++; // Minutes wheel order
                 var w = {};
-                w[s.hourText] = {};
-                for (var i = 0; i < (s.ampm ? 12 : 24); i += stepH)
-                    w[s.hourText][i] = (s.ampm && i == 0) ? 12 : (i < 10) ? ('0' + i) : i;
-                w[s.minuteText] = {};
-                for (var i = 0; i < 60; i += stepM)
-                    w[s.minuteText][i] = (i < 10) ? ('0' + i) : i;
-                if (s.seconds) {
+                if (tord.match(/h/i)) {
+                    o.h = offset++; // Hours wheel order
+                    w[s.hourText] = {};
+                    for (var i = 0; i < (hampm ? 12 : 24); i += stepH)
+                        w[s.hourText][i] = hampm && i == 0 ? 12 : tord.match(/hh/i) && i < 10 ? '0' + i : i;
+                }
+                if (tord.match(/i/)) {
+                    o.i = offset++; // Minutes wheel order
+                    w[s.minuteText] = {};
+                    for (var i = 0; i < 60; i += stepM)
+                        w[s.minuteText][i] = tord.match(/ii/) && i < 10 ? '0' + i : i;
+                }
+                if (tord.match(/s/)) {
                     o.s = offset++; // Seconds wheel order
                     w[s.secText] = {};
                     for (var i = 0; i < 60; i += stepS)
-                        w[s.secText][i] = (i < 10) ? ('0' + i) : i;
+                        w[s.secText][i] = tord.match(/ss/) && i < 10 ? '0' + i : i;
                 }
-                if (s.ampm) {
+                if (ampm) {
                     o.ap = offset++; // ampm wheel order
-                    w[s.ampmText] = { 0: 'AM', 1: 'PM' };
+                    var upper = tord.match(/A/);
+                    w[s.ampmText] = { 0: upper ? 'AM' : 'am', 1: upper ? 'PM' : 'pm' };
                 }
                 wheels.push(w);
             }
@@ -128,7 +139,7 @@
 
             function getHour(d) {
                 var hour = d.getHours();
-                hour = s.ampm ? (hour >= 12 ? (hour - 12) : hour) : hour;
+                hour = hampm && hour >= 12 ? hour - 12 : hour;
                 return step(hour, stepH);
             }
 
@@ -141,7 +152,7 @@
             }
 
             function getAmPm(d) {
-                return s.ampm && d.getHours() > 11 ? 1 : 0;
+                return ampm && d.getHours() > 11 ? 1 : 0;
             }
 
             return {
@@ -180,8 +191,8 @@
                 validate: function(dw, i) {
                     var temp = inst.temp,
                         mins = { m: 0, d: 1, h: 0, i: 0, s: 0, ap: 0 },
-                        maxs = { m: 11, d: 31, h: step(s.ampm ? 11 : 23, stepH), i: step(59, stepM), s: step(59, stepS), ap: 1 },
-                        w = (mind || maxd) ? ['y', 'm', 'd', 'ap', 'h', 'i', 's'] : ((i == o.y || i == o.m || i === undefined) ? ['d'] : []), // Validate day only, if no min/max date set
+                        maxs = { m: 11, d: 31, h: step(hampm ? 11 : 23, stepH), i: step(59, stepM), s: step(59, stepS), ap: 1 },
+                        w = (mind || maxd) ? ['y', 'm', 'd', 'ap', 'h', 'i', 's'] : ((i == o.y || i == o.m) ? ['d'] : []), // Validate day only, if no min/max date set
                         minprop = true,
                         maxprop = true;
                     $.each(w, function(x, i) {
@@ -192,8 +203,17 @@
                                 val = get(temp, i);
                                 t = $('ul', dw).eq(o[i])
                             if (i == 'd') {
-                                maxdays = 32 - new Date(get(temp, 'y'), get(temp, 'm'), 32).getDate();
+                                var y = get(temp, 'y'),
+                                    m = get(temp, 'm');
+                                maxdays = 32 - new Date(y, m, 32).getDate();
                                 max = maxdays;
+                                if (regen)
+                                    $('li', t).each(function() {
+                                        var that = $(this),
+                                            d = that.data('val'),
+                                            w = new Date(y, m, d).getDay();
+                                        that.html(dord.replace(/[my]/gi, '').replace(/dd/, d < 10 ? '0' + d : d).replace(/d/, d).replace(/DD/, s.dayNames[w]).replace(/D/, s.dayNamesShort[w]));
+                                    });
                             }
                             if (minprop && mind) {
                                 min = mind[f[i]] ? mind[f[i]]() : f[i](mind);
@@ -250,7 +270,6 @@
                     setDate: function(d, fill, time) {
                         if (fill == undefined) fill = false;
                         return this.each(function () {
-                            //var inst = $(this).data('scroller');
                             var inst = $(this).scroller('getInst');
                             if (inst) {
                                 // Set wheels

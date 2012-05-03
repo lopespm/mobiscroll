@@ -6,8 +6,6 @@
             dateOrder: 'mmddy',
             timeWheels: 'hhiiA',
             timeFormat: 'hh:ii A',
-            //ampm: true,
-            //seconds: false,
             startYear: date.getFullYear() - 100,
             endYear: date.getFullYear() + 1,
             monthNames: ['January','February','March','April','May','June', 'July','August','September','October','November','December'],
@@ -28,6 +26,37 @@
             separator: ' '
         },
         preset = function(inst) {
+            var that = $(this),
+                format;
+            // Force format for html5 date inputs (experimental)
+            if (that.is('input')) {
+                switch (that.attr('type')) {
+                    case 'date':
+                        format = 'yy-mm-dd';
+                        break;
+                    case 'datetime':
+                        format = 'yy-mm-ddTHH:ii:ssZ';
+                        break;
+                    case 'datetime-local':
+                        format = 'yy-mm-ddTHH:ii:ss';
+                        break;
+                    case 'month':
+                        format = 'yy-mm';
+                        defaults.dateOrder = 'mmyy';
+                        break;
+                    case 'time':
+                        format = 'HH:ii:ss';
+                        break;
+                }
+                // Check for min/max attributes
+                var min = that.attr('min'),
+                    max = that.attr('max');
+                if (min)
+                    defaults.minDate = new Date(min);
+                if (max)
+                    defaults.maxDate = new Date(max);
+            }
+
             // Set year-month-day order
             var s = $.extend({}, defaults, inst.settings),
                 offset = 0,
@@ -41,7 +70,7 @@
                 regen = dord.match(/D/),
                 ampm = tord.match(/a/i),
                 hampm = tord.match(/h/),
-                format = '',
+                hformat = p == 'datetime' ? s.dateFormat + s.separator + s.timeFormat : p == 'time' ? s.timeFormat : s.dateFormat,
                 defd = new Date(),
                 stepH = s.stepHour,
                 stepM = s.stepMinute,
@@ -49,12 +78,7 @@
                 mind = s.minDate,
                 maxd = s.maxDate;
 
-            if (p == 'date')
-                format = s.dateFormat;
-            else if (p == 'time')
-                format = s.timeFormat;
-            else if (p == 'datetime')
-                format = s.dateFormat + s.separator + s.timeFormat;
+            format = format ? format : hformat;
 
             if (p.match(/date/i)) {
 
@@ -155,16 +179,23 @@
                 return ampm && d.getHours() > 11 ? 1 : 0;
             }
 
+            function getDate(d) {
+                var hour = get(d, 'h', 0);
+                return new Date(get(d, 'y'), get(d, 'm'), get(d, 'd'), get(d, 'ap') ? hour + 12 : hour, get(d, 'i', 0), get(d, 's', 0));
+            }
+
             return {
                 wheels: wheels,
+                headerText: function(v) {
+                    return $.scroller.formatDate(hformat, getDate(inst.temp), s);
+                },
                 /**
                  * Builds a date object from the wheel selections and formats it to the given date/time format
                  * @param {Array} d - An array containing the selected wheel values
                  * @return {String} - The formatted date string
                  */
                 formatResult: function(d) {
-                    var hour = get(d, 'h', 0);
-                    return $.scroller.formatDate(format, new Date(get(d, 'y'), get(d, 'm'), get(d, 'd'), get(d, 'ap') ? hour + 12 : hour, get(d, 'i', 0), get(d, 's', 0)), s);
+                    return $.scroller.formatDate(format, getDate(d), s);
                 },
                 /**
                  * Builds a date object from the input value and returns an array to set wheel values
@@ -255,11 +286,8 @@
                     getDate: function(temp) {
                         //var inst = $(this).data('scroller');
                         var inst = $(this).scroller('getInst');
-                        if (inst) {
-                            var d = temp ? inst.temp : inst.values
-                                hour = get(d, 'h', 0);
-                            return new Date(get(d, 'y'), get(d, 'm'), get(d, 'd'), get(d, 'ap') ? hour + 12 : hour, get(d, 'i', 0), get(d, 's', 0));
-                        }
+                        if (inst)
+                            return getDate(temp ? inst.temp : inst.values);
                     },
                     /**
                     * Sets the selected date

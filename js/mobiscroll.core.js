@@ -89,7 +89,7 @@
                     cell = cell1;
                     val = val - dist1;
                 }
-                that.temp[i] = cell.data('val');
+                that.temp[i] = cell.attr('data-val');
             }
             return val;
         }
@@ -441,8 +441,9 @@
         val = val < min ? min : val;
 
         var cell = $('li', t).eq(val);
+
         // Set selected scroller value
-        inst.temp[i] = cell.data('val');
+        inst.temp[i] = cell.attr('data-val');
 
         // Validate
         //val = inst.validate(i, val, cell);

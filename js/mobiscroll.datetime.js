@@ -27,6 +27,7 @@
         },
         preset = function(inst) {
             var that = $(this),
+                html5def = {},
                 format;
             // Force format for html5 date inputs (experimental)
             if (that.is('input')) {
@@ -42,7 +43,7 @@
                         break;
                     case 'month':
                         format = 'yy-mm';
-                        defaults.dateOrder = 'mmyy';
+                        html5def.dateOrder = 'mmyy';
                         break;
                     case 'time':
                         format = 'HH:ii:ss';
@@ -52,13 +53,13 @@
                 var min = that.attr('min'),
                     max = that.attr('max');
                 if (min)
-                    defaults.minDate = $.scroller.parseDate(format, min);
+                    html5def.minDate = $.scroller.parseDate(format, min);
                 if (max)
-                    defaults.maxDate = $.scroller.parseDate(format, max);
+                    html5def.maxDate = $.scroller.parseDate(format, max);
             }
 
             // Set year-month-day order
-            var s = $.extend({}, defaults, inst.settings),
+            var s = $.extend({}, defaults, html5def, inst.settings),
                 offset = 0,
                 wheels = [],
                 ord = [],
